@@ -7,8 +7,7 @@ import 'package:wallet/custom_card.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter_file_dialog/flutter_file_dialog.dart';
-
-
+import 'package:dynamic_color/dynamic_color.dart';
 
 void main() {
   runApp(const MyApp());
@@ -19,26 +18,42 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Wallet',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepOrange),
-      ),
-      themeMode: ThemeMode.system,
-      darkTheme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.deepOrange,
-          brightness: Brightness.dark,
+    return DynamicColorBuilder(
+      builder: (ColorScheme? lightDynamic, ColorScheme? darkDynamic) {
+        return MaterialApp(
+          title: 'Wallet',
+          theme: ThemeData(
+            useMaterial3: true,
+            colorScheme:
+                lightDynamic ?? ColorScheme.fromSeed(seedColor: Colors.cyan),
+            textTheme: TextTheme(
+              titleLarge: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+          darkTheme: ThemeData(
+            useMaterial3: true,
+            colorScheme:
+                darkDynamic ??
+                ColorScheme.fromSeed(
+                  seedColor: Colors.cyan,
+                  brightness: Brightness.dark,
+                ),
+            textTheme: TextTheme(
+              titleLarge: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+          themeMode: ThemeMode.system,
 
-        ),
-      ),
-      home: const MyHomePage(title: 'Wallet'),
+          home: const MyHomePage(title: 'Wallet'),
+        );
+      },
     );
   }
 }
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key, required this.title});
+
   final String title;
 
   @override
@@ -48,12 +63,15 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   final _secureStorage = const FlutterSecureStorage();
   List<Map<String, dynamic>> _cards = [];
+  bool isEditing = false;
+  Set<int> selectedIndices = {};
 
   @override
   void initState() {
     super.initState();
     _loadCards();
   }
+
   Future<void> _loadCards() async {
     try {
       String? cardsJson = await _secureStorage.read(key: 'wallet_cards');
@@ -65,25 +83,26 @@ class _MyHomePageState extends State<MyHomePage> {
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error exporting cards: $e'))
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error exporting cards: $e')));
     }
   }
-
 
   Future<void> _exportCards() async {
     try {
       String? cardsJson = await _secureStorage.read(key: 'wallet_cards');
       if (cardsJson == null || cardsJson.isEmpty) {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No cards to export')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('No cards to export')));
         return;
       }
 
-      final mediaDir = Directory('/storage/emulated/0/Android/media/com.monees007.wallet/WalletBackup');
+      final mediaDir = Directory(
+        '/storage/emulated/0/Android/media/com.monees007.wallet/WalletBackup',
+      );
 
       if (!await mediaDir.exists()) {
         await mediaDir.create(recursive: true);
@@ -93,14 +112,14 @@ class _MyHomePageState extends State<MyHomePage> {
       await file.writeAsString(cardsJson);
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Cards exported to ${file.path}')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Cards exported to ${file.path}')));
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error exporting cards: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error exporting cards: $e')));
     }
   }
 
@@ -115,9 +134,9 @@ class _MyHomePageState extends State<MyHomePage> {
       final filePath = await FlutterFileDialog.pickFile(params: params);
 
       if (filePath == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No file selected')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('No file selected')));
         return;
       }
 
@@ -134,10 +153,10 @@ class _MyHomePageState extends State<MyHomePage> {
         const SnackBar(content: Text('Cards imported successfully')),
       );
     } catch (e) {
-           if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Import failed: $e')),
-        );
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Import failed: $e')));
       }
     }
   }
@@ -148,10 +167,9 @@ class _MyHomePageState extends State<MyHomePage> {
       await _secureStorage.write(key: 'wallet_cards', value: cardsJson);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error exporting cards: $e'))
-          );
-
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error exporting cards: $e')));
     }
   }
 
@@ -202,7 +220,7 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void _showCreditCardForm() {
-    final _formKey = GlobalKey<FormState>();
+    final formKey = GlobalKey<FormState>();
     String cardNumber = '';
     String cardHolder = '';
     String expiryDate = '';
@@ -219,34 +237,58 @@ class _MyHomePageState extends State<MyHomePage> {
             return AlertDialog(
               title: const Text('Add Credit/Debit Card'),
               content: Form(
-                key: _formKey,
+                key: formKey,
                 child: SingleChildScrollView(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       TextFormField(
-                        decoration: const InputDecoration(labelText: 'Card Number'),
-                        validator: (value) => value?.isEmpty ?? true ? 'Required' : null,
+                        decoration: const InputDecoration(
+                          labelText: 'Card Number',
+                        ),
+                        keyboardType: TextInputType.number,
+                        autofillHints: [AutofillHints.creditCardNumber],
+                        validator:
+                            (value) =>
+                                value?.isEmpty ?? true ? 'Required' : null,
                         onSaved: (value) => cardNumber = value ?? '',
                       ),
                       TextFormField(
-                        decoration: const InputDecoration(labelText: 'Card Holder'),
-                        validator: (value) => value?.isEmpty ?? true ? 'Required' : null,
+                        keyboardType: TextInputType.name,
+                        autofillHints: [AutofillHints.creditCardName],
+                        decoration: const InputDecoration(
+                          labelText: 'Card Holder',
+                        ),
+                        validator:
+                            (value) =>
+                                value?.isEmpty ?? true ? 'Required' : null,
                         onSaved: (value) => cardHolder = value ?? '',
                       ),
                       TextFormField(
-                        decoration: const InputDecoration(labelText: 'Expiry Date (MM/YY)'),
-                        validator: (value) => value?.isEmpty ?? true ? 'Required' : null,
+                        decoration: const InputDecoration(
+                          labelText: 'Expiry Date (MM/YY)',
+                        ),
+                        keyboardType: TextInputType.datetime,
+                        autofillHints: [AutofillHints.creditCardExpirationDate],
+                        validator:
+                            (value) =>
+                                value?.isEmpty ?? true ? 'Required' : null,
                         onSaved: (value) => expiryDate = value ?? '',
                       ),
                       TextFormField(
                         decoration: const InputDecoration(labelText: 'CVV'),
-                        validator: (value) => value?.isEmpty ?? true ? 'Required' : null,
+                        keyboardType: TextInputType.number,
+                        autofillHints: [AutofillHints.creditCardSecurityCode],
+                        validator:
+                            (value) =>
+                                value?.isEmpty ?? true ? 'Required' : null,
                         onSaved: (value) => cvv = value ?? '',
                       ),
                       TextFormField(
                         decoration: const InputDecoration(labelText: 'Type'),
-                        validator: (value) => value?.isEmpty ?? true ? 'Required' : null,
+                        validator:
+                            (value) =>
+                                value?.isEmpty ?? true ? 'Required' : null,
                         onSaved: (value) => type = value ?? '',
                       ),
                       const SizedBox(height: 10),
@@ -256,7 +298,9 @@ class _MyHomePageState extends State<MyHomePage> {
                             child: ElevatedButton.icon(
                               onPressed: () async {
                                 final picker = ImagePicker();
-                                final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+                                final pickedFile = await picker.pickImage(
+                                  source: ImageSource.gallery,
+                                );
                                 if (pickedFile != null) {
                                   setState(() {
                                     frontImage = File(pickedFile.path);
@@ -264,7 +308,9 @@ class _MyHomePageState extends State<MyHomePage> {
                                 }
                               },
                               icon: const Icon(Icons.image),
-                              label: Text(frontImage != null ? 'Front ' : 'Front Image'),
+                              label: Text(
+                                frontImage != null ? 'Front ' : 'Front Image',
+                              ),
                             ),
                           ),
                           const SizedBox(width: 8),
@@ -272,7 +318,9 @@ class _MyHomePageState extends State<MyHomePage> {
                             child: ElevatedButton.icon(
                               onPressed: () async {
                                 final picker = ImagePicker();
-                                final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+                                final pickedFile = await picker.pickImage(
+                                  source: ImageSource.gallery,
+                                );
                                 if (pickedFile != null) {
                                   setState(() {
                                     backImage = File(pickedFile.path);
@@ -280,7 +328,9 @@ class _MyHomePageState extends State<MyHomePage> {
                                 }
                               },
                               icon: const Icon(Icons.image),
-                              label: Text(backImage != null ? 'Back' : 'Back Image'),
+                              label: Text(
+                                backImage != null ? 'Back' : 'Back Image',
+                              ),
                             ),
                           ),
                         ],
@@ -296,9 +346,17 @@ class _MyHomePageState extends State<MyHomePage> {
                 ),
                 TextButton(
                   onPressed: () {
-                    if (_formKey.currentState?.validate() ?? false) {
-                      _formKey.currentState?.save();
-                      _addCreditCard(cardNumber, cardHolder, expiryDate, cvv, type, frontImage, backImage);
+                    if (formKey.currentState?.validate() ?? false) {
+                      formKey.currentState?.save();
+                      _addCreditCard(
+                        cardNumber,
+                        cardHolder,
+                        expiryDate,
+                        cvv,
+                        type,
+                        frontImage,
+                        backImage,
+                      );
                       Navigator.of(context).pop();
                     }
                   },
@@ -313,7 +371,7 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void _showLibraryCardForm() {
-    final _formKey = GlobalKey<FormState>();
+    final formKey = GlobalKey<FormState>();
     String name = '';
     String idNumber = '';
     String registrationNumber = '';
@@ -329,60 +387,71 @@ class _MyHomePageState extends State<MyHomePage> {
         return AlertDialog(
           title: const Text('Add Library Card'),
           content: Form(
-            key: _formKey,
+            key: formKey,
             child: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   TextFormField(
                     decoration: const InputDecoration(labelText: 'Name'),
-                    validator: (value) => value?.isEmpty ?? true ? 'Required' : null,
+                    validator:
+                        (value) => value?.isEmpty ?? true ? 'Required' : null,
                     onSaved: (value) => name = value ?? '',
                   ),
                   TextFormField(
                     decoration: const InputDecoration(labelText: 'ID'),
-                    validator: (value) => value?.isEmpty ?? true ? 'Required' : null,
+                    validator:
+                        (value) => value?.isEmpty ?? true ? 'Required' : null,
                     onSaved: (value) => id = value ?? '',
                   ),
                   TextFormField(
                     decoration: const InputDecoration(labelText: 'ID Number'),
-                    validator: (value) => value?.isEmpty ?? true ? 'Required' : null,
+                    validator:
+                        (value) => value?.isEmpty ?? true ? 'Required' : null,
                     onSaved: (value) => idNumber = value ?? '',
                   ),
                   TextFormField(
-                    decoration: const InputDecoration(labelText: 'Registration Number'),
-                    validator: (value) => value?.isEmpty ?? true ? 'Required' : null,
+                    decoration: const InputDecoration(
+                      labelText: 'Registration Number',
+                    ),
+                    validator:
+                        (value) => value?.isEmpty ?? true ? 'Required' : null,
                     onSaved: (value) => registrationNumber = value ?? '',
                   ),
                   TextFormField(
                     decoration: const InputDecoration(labelText: 'Course'),
-                    validator: (value) => value?.isEmpty ?? true ? 'Required' : null,
+                    validator:
+                        (value) => value?.isEmpty ?? true ? 'Required' : null,
                     onSaved: (value) => course = value ?? '',
                   ),
                   TextFormField(
                     decoration: const InputDecoration(labelText: 'Session'),
-                    validator: (value) => value?.isEmpty ?? true ? 'Required' : null,
+                    validator:
+                        (value) => value?.isEmpty ?? true ? 'Required' : null,
                     onSaved: (value) => session = value ?? '',
                   ),
                   TextFormField(
                     decoration: const InputDecoration(labelText: 'School'),
-                    validator: (value) => value?.isEmpty ?? true ? 'Required' : null,
+                    validator:
+                        (value) => value?.isEmpty ?? true ? 'Required' : null,
                     onSaved: (value) => school = value ?? '',
                   ),
                   const SizedBox(width: 8),
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: () async {
-                        final picker = ImagePicker();
-                        final pickedFile = await picker.pickImage(source: ImageSource.gallery);
-                        if (pickedFile != null) {
-                          setState(() {
-                            profile = File(pickedFile.path);
-                          });
-                        }
-                      },
-                      icon: const Icon(Icons.image),
-                      label: Text(profile != null ? 'Back ✓' : 'Back Image'),
+                  ElevatedButton.icon(
+                    onPressed: () async {
+                      final picker = ImagePicker();
+                      final pickedFile = await picker.pickImage(
+                        source: ImageSource.gallery,
+                      );
+                      if (pickedFile != null) {
+                        setState(() {
+                          profile = File(pickedFile.path);
+                        });
+                      }
+                    },
+                    icon: const Icon(Icons.image),
+                    label: Text(
+                      profile != null ? 'Profile ✓' : 'Profile Image',
                     ),
                   ),
                 ],
@@ -396,9 +465,18 @@ class _MyHomePageState extends State<MyHomePage> {
             ),
             TextButton(
               onPressed: () {
-                if (_formKey.currentState?.validate() ?? false) {
-                  _formKey.currentState?.save();
-                  _addLibraryCard(name, idNumber, registrationNumber, course, session, school, id, profile);
+                if (formKey.currentState?.validate() ?? false) {
+                  formKey.currentState?.save();
+                  _addLibraryCard(
+                    name,
+                    idNumber,
+                    registrationNumber,
+                    course,
+                    session,
+                    school,
+                    id,
+                    profile,
+                  );
                   Navigator.of(context).pop();
                 }
               },
@@ -411,12 +489,10 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void _showCustomCardForm() {
-    final _formKey = GlobalKey<FormState>();
+    final formKey = GlobalKey<FormState>();
     String cardName = '';
     File? frontImage;
     File? backImage;
-    File? frontBackground;
-    File? backBackground;
 
     showDialog(
       context: context,
@@ -426,14 +502,18 @@ class _MyHomePageState extends State<MyHomePage> {
             return AlertDialog(
               title: const Text('Add Custom Card'),
               content: Form(
-                key: _formKey,
+                key: formKey,
                 child: SingleChildScrollView(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       TextFormField(
-                        decoration: const InputDecoration(labelText: 'Card Name'),
-                        validator: (value) => value?.isEmpty ?? true ? 'Required' : null,
+                        decoration: const InputDecoration(
+                          labelText: 'Card Name',
+                        ),
+                        validator:
+                            (value) =>
+                                value?.isEmpty ?? true ? 'Required' : null,
                         onSaved: (value) => cardName = value ?? '',
                       ),
                       const SizedBox(height: 16),
@@ -443,7 +523,9 @@ class _MyHomePageState extends State<MyHomePage> {
                             child: ElevatedButton.icon(
                               onPressed: () async {
                                 final picker = ImagePicker();
-                                final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+                                final pickedFile = await picker.pickImage(
+                                  source: ImageSource.gallery,
+                                );
                                 if (pickedFile != null) {
                                   setState(() {
                                     frontImage = File(pickedFile.path);
@@ -451,7 +533,9 @@ class _MyHomePageState extends State<MyHomePage> {
                                 }
                               },
                               icon: const Icon(Icons.image),
-                              label: Text(frontImage != null ? 'Front ✓' : 'Front Image'),
+                              label: Text(
+                                frontImage != null ? 'Front ✓' : 'Front Image',
+                              ),
                             ),
                           ),
                           const SizedBox(width: 8),
@@ -459,7 +543,9 @@ class _MyHomePageState extends State<MyHomePage> {
                             child: ElevatedButton.icon(
                               onPressed: () async {
                                 final picker = ImagePicker();
-                                final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+                                final pickedFile = await picker.pickImage(
+                                  source: ImageSource.gallery,
+                                );
                                 if (pickedFile != null) {
                                   setState(() {
                                     backImage = File(pickedFile.path);
@@ -467,7 +553,9 @@ class _MyHomePageState extends State<MyHomePage> {
                                 }
                               },
                               icon: const Icon(Icons.image),
-                              label: Text(backImage != null ? 'Back ✓' : 'Back Image'),
+                              label: Text(
+                                backImage != null ? 'Back ✓' : 'Back Image',
+                              ),
                             ),
                           ),
                         ],
@@ -484,8 +572,8 @@ class _MyHomePageState extends State<MyHomePage> {
                 ),
                 TextButton(
                   onPressed: () {
-                    if (_formKey.currentState?.validate() ?? false) {
-                      _formKey.currentState?.save();
+                    if (formKey.currentState?.validate() ?? false) {
+                      formKey.currentState?.save();
                       _addCustomCard(cardName, frontImage, backImage);
                       Navigator.of(context).pop();
                     }
@@ -500,15 +588,15 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
-  void _addCreditCard(
-      String cardNumber,
-      String cardHolder,
-      String expiryDate,
-      String cvv,
-      String type,
-      File? frontImage,
-      File? backImage,
-      ) {
+  Future<void> _addCreditCard(
+    String cardNumber,
+    String cardHolder,
+    String expiryDate,
+    String cvv,
+    String type,
+    File? frontImage,
+    File? backImage,
+  ) async {
     setState(() {
       _cards.add({
         'type': type,
@@ -517,18 +605,26 @@ class _MyHomePageState extends State<MyHomePage> {
         'expiryDate': expiryDate,
         'cvv': cvv,
         'id': DateTime.now().millisecondsSinceEpoch.toString(),
-        'frontImagePath': frontImage?.path,
-        'backImagePath': backImage?.path,
+        'frontImage': frontImage?.path,
+        'backImage': backImage?.path,
       });
     });
     _saveCards();
   }
 
-
-  void _addLibraryCard(String name, String idNumber, String registrationNumber,
-      String course, String session, String school, String id, File? profile) {
+  void _addLibraryCard(
+    String name,
+    String idNumber,
+    String registrationNumber,
+    String course,
+    String session,
+    String school,
+    String id,
+    File? profile,
+  ) {
     setState(() {
       _cards.add({
+        'id': DateTime.now().millisecondsSinceEpoch.toString(),
         'type': 'library',
         'name': name,
         'idNumber': idNumber,
@@ -536,8 +632,7 @@ class _MyHomePageState extends State<MyHomePage> {
         'course': course,
         'session': session,
         'school': school,
-        'id': id,
-        'profilePath': profile?.path,
+        'profile': profile?.path,
       });
     });
     _saveCards();
@@ -565,7 +660,25 @@ class _MyHomePageState extends State<MyHomePage> {
           expiryDate: cardData['expiryDate'],
           cvv: cardData['cvv'],
           frontImage: "assets/swiggy.png",
-          backImage: "assets/swiggy_back.png"
+          backImage: "assets/swiggy_back.png",
+        );
+      case 'simply_click':
+        return FlipCardWidget(
+          cardNumber: cardData['cardNumber'],
+          cardHolder: cardData['cardHolder'],
+          expiryDate: cardData['expiryDate'],
+          cvv: cardData['cvv'],
+          frontImage: "assets/simply_click.png",
+          backImage: "assets/simply_click_back.png",
+        );
+      case 'credit':
+        return FlipCardWidget(
+          cardNumber: cardData['cardNumber'],
+          cardHolder: cardData['cardHolder'],
+          expiryDate: cardData['expiryDate'],
+          cvv: cardData['cvv'],
+          frontImage: cardData['frontImage'] ?? '',
+          backImage: cardData['backImage'] ?? '',
         );
       case 'library':
         return FlippableJnuLibraryCard(
@@ -575,7 +688,10 @@ class _MyHomePageState extends State<MyHomePage> {
           course: cardData['course'],
           session: cardData['session'],
           school: cardData['school'],
-          photo: cardData['profile'] != null ? AssetImage(cardData['profile']) : AssetImage('assets/default.jpg'),
+          photo:
+              cardData['profile'] != null
+                  ? FileImage(File(cardData['profile']))
+                  : AssetImage('assets/default.jpg'),
         );
       case 'custom':
         return CustomCard(
@@ -605,23 +721,93 @@ class _MyHomePageState extends State<MyHomePage> {
             tooltip: 'Import Cards',
             onPressed: () => _importCards(context),
           ),
+          IconButton(
+            icon: Icon(isEditing ? Icons.close : Icons.edit),
+            onPressed: () {
+              setState(() {
+                isEditing = !isEditing;
+                selectedIndices.clear();
+              });
+            },
+          ),
+          if (isEditing)
+            IconButton(
+              icon: Icon(Icons.delete),
+              onPressed: () {
+                setState(() {
+                  _cards =
+                      _cards
+                          .asMap()
+                          .entries
+                          .where((e) => !selectedIndices.contains(e.key))
+                          .map((e) => e.value)
+                          .toList();
+                  selectedIndices.clear();
+                  _saveCards();
+                  isEditing = false;
+                });
+              },
+            ),
         ],
       ),
       body: Center(
         child: ListView.builder(
-          padding: const EdgeInsets.fromLTRB(8,10,8,8),
-          itemCount: _cards.length, // +2 for the initial cards
+          padding: const EdgeInsets.fromLTRB(8, 13, 8, 100),
+          itemCount: _cards.length,
           itemBuilder: (context, index) {
-                      return Column(
-                children: [
-                  _buildCard(_cards[index]),
-                  const SizedBox(height: 20),
-                ],
-              );
+            final card = _cards[index];
+            bool isSelected = selectedIndices.contains(index);
 
+            return GestureDetector(
+              onLongPress: () {
+                if (isEditing) {
+                  setState(() {
+                    if (isSelected) {
+                      selectedIndices.remove(index);
+                    } else {
+                      selectedIndices.add(index);
+                    }
+                  });
+                }
+              },
+              child: Column(
+                children: [
+                  Stack(
+                    children: [
+                      _buildCard(card),
+                      if (isEditing)
+                        Positioned(
+                          bottom: 8,
+                          right: 8,
+                          child: IconButton(
+                            color: Colors.orangeAccent,
+                            icon: Icon(
+                              isSelected
+                                  ? Icons.check
+                                  : Icons.check_box_outline_blank,
+                            ),
+                            onPressed: () {
+                              isSelected = !isSelected;
+                              setState(() {
+                                if (isSelected) {
+                                  selectedIndices.add(index);
+                                } else {
+                                  selectedIndices.remove(index);
+                                }
+                              });
+                            },
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 17),
+                ],
+              ),
+            );
           },
         ),
       ),
+
       floatingActionButton: FloatingActionButton(
         onPressed: _showAddCardDialog,
         tooltip: 'Add Card',

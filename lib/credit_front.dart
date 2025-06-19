@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 
 class CreditCardFront extends StatelessWidget {
@@ -5,6 +7,7 @@ class CreditCardFront extends StatelessWidget {
   final String cardHolder;
   final String expiryDate;
   final String frontImage;
+
 
   const CreditCardFront({
     super.key,
@@ -21,7 +24,7 @@ class CreditCardFront extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.blueGrey[900],
           image: DecorationImage(
-            image: AssetImage(frontImage),
+            image:  frontImage.contains('asset')?  AssetImage(frontImage): FileImage(File(frontImage)),
             fit: BoxFit.cover,
           ),
           borderRadius: BorderRadius.circular(16),

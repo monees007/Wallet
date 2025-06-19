@@ -70,7 +70,7 @@ class _FlipCardWidgetState extends State<FlipCardWidget>
                 : Transform(
               alignment: Alignment.center,
               transform: Matrix4.rotationY(pi),
-              child: CreditCardBack(cvv: widget.cvv, backImage:widget.backImage),
+              child: CreditCardBack(cvv: widget.cvv, backImage:widget.backImage, cardHolder:widget.cardHolder),
             ),
           );
         },

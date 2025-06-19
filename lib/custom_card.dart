@@ -78,7 +78,7 @@ class _CustomCardState extends State<CustomCard>
           child: Stack(
             children: [
               // Background image or color
-              Container(
+              SizedBox(
                 width: double.infinity,
                 height: double.infinity,
                 child:

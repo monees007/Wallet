@@ -1,10 +1,28 @@
+import 'dart:io';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter/material.dart';
 
 class CreditCardBack extends StatelessWidget {
   final String cvv;
   final String backImage;
+  final String cardHolder;
 
-  const CreditCardBack({super.key, required this.cvv, required this.backImage});
+  String toTitleCase(String input) {
+    return input
+        .split(' ')
+        .map((word) {
+          if (word.isEmpty) return word;
+          return word[0].toUpperCase() + word.substring(1).toLowerCase();
+        })
+        .join(' ');
+  }
+
+  const CreditCardBack({
+    super.key,
+    required this.cvv,
+    required this.backImage,
+    required this.cardHolder,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -13,10 +31,13 @@ class CreditCardBack extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           color: Colors.blueGrey[900],
-          image: backImage!='' ? DecorationImage(
-            image: AssetImage(backImage),
+          image: DecorationImage(
+            image:
+                backImage.contains('asset')
+                    ? AssetImage(backImage)
+                    : FileImage(File(backImage)),
             fit: BoxFit.cover,
-          ) : null,
+          ),
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
@@ -26,15 +47,11 @@ class CreditCardBack extends StatelessWidget {
               offset: const Offset(0, 5),
             ),
           ],
-
         ),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
         child: Column(
           children: [
-            Container(
-              height: 40,
-              color: Colors.black87,
-            ),
+            Container(height: 40, color: Colors.black87),
             const SizedBox(height: 10),
             Row(
               children: [
@@ -50,8 +67,10 @@ class CreditCardBack extends StatelessWidget {
                       cvv,
                       style: const TextStyle(
                         fontSize: 16,
+                        color: Colors.black,
                         letterSpacing: 2,
                         fontWeight: FontWeight.bold,
+                        fontFamily: 'Courier',
                       ),
                     ),
                   ),
@@ -59,11 +78,15 @@ class CreditCardBack extends StatelessWidget {
               ],
             ),
             const Spacer(),
-            const Align(
+            Align(
               alignment: Alignment.bottomRight,
               child: Text(
-                'Swipe Signature',
-                style: TextStyle(color: Colors.white54, fontSize: 10),
+                toTitleCase(cardHolder),
+                style: GoogleFonts.meaCulpa(
+                  color: Colors.white54,
+                  fontSize: 30, // Looks better larger
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ],
