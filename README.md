@@ -8,9 +8,8 @@ Secure Storage for ID & Credit Cards
 
 A modern Flutter-based mobile application that lets you securely store and manage your **ID cards**, **credit/debit cards**, and **2FA (two-step verification) codes** – all in one place.
 
----
 
-##  Features
+## Features
 
 * **ID & Credit Card Storage**
   Save personal IDs, credit/debit cards with cardholder info, number, expiry date, and optional images.
@@ -20,9 +19,11 @@ A modern Flutter-based mobile application that lets you securely store and manag
 
 * **Secure Import & Export**
   Backup and restore your encrypted card data securely.
+* **Completly Offline**
+  No connection to Internet.
 
 
-\## Upcoming Features
+## Upcoming Features
 
 * **Data Encryption**
   All sensitive data is encrypted locally and optionally synced securely to cloud storage.
@@ -36,12 +37,9 @@ A modern Flutter-based mobile application that lets you securely store and manag
 * **2FA Code Management**
   Add and generate time-based OTPs for your accounts with optional QR scanning.
 
----
 
 
 ## Contribute
-
-### 1. Clone the repository
 
 ```bash
 git clone https://github.com/yourusername/wallet.git
