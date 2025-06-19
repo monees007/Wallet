@@ -1,16 +1,49 @@
-# wallet
+![image](https://github.com/user-attachments/assets/21a1ac7c-90c6-4754-9922-caca801411b7)
 
-Beautiful wallet to keep cards locally.
 
-## Getting Started
+#  Wallet 
+Secure Storage for ID & Credit Cards
 
-This project is a starting point for a Flutter application.
+---
 
-A few resources to get you started if this is your first Flutter project:
+A modern Flutter-based mobile application that lets you securely store and manage your **ID cards**, **credit/debit cards**, and **2FA (two-step verification) codes** – all in one place.
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+---
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+##  Features
+
+* **ID & Credit Card Storage**
+  Save personal IDs, credit/debit cards with cardholder info, number, expiry date, and optional images.
+
+* **Card Image Storage**
+  Store card front/back images (securely saved in `Android/media`).
+
+* **Secure Import & Export**
+  Backup and restore your encrypted card data securely.
+
+
+\## Upcoming Features
+
+* **Data Encryption**
+  All sensitive data is encrypted locally and optionally synced securely to cloud storage.
+
+* **Fingerprint / PIN Lock**
+  Supports biometric authentication and custom PIN locks for secure access.
+
+* **NFC Card Reader Support**
+  Automatically read card details from physical cards (if supported).
+
+* **2FA Code Management**
+  Add and generate time-based OTPs for your accounts with optional QR scanning.
+
+---
+
+
+## Contribute
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/yourusername/wallet.git
+cd wallet
+```
