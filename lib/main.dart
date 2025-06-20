@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:wallet/credit_card.dart';
-import 'package:wallet/flippabe_jnu_libcard.dart';
-import 'package:wallet/custom_card.dart';
+import 'package:wallet/widgets/credit_card.dart';
+import 'package:wallet/widgets/jnu_lib_card.dart';
+import 'package:wallet/widgets/custom_card.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter_file_dialog/flutter_file_dialog.dart';
@@ -589,14 +589,14 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Future<void> _addCreditCard(
-    String cardNumber,
-    String cardHolder,
-    String expiryDate,
-    String cvv,
-    String type,
-    File? frontImage,
-    File? backImage,
-  ) async {
+      String cardNumber,
+      String cardHolder,
+      String expiryDate,
+      String cvv,
+      String type,
+      File? frontImage,
+      File? backImage,
+      ) async {
     setState(() {
       _cards.add({
         'type': type,
