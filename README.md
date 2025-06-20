@@ -38,6 +38,7 @@ A modern Flutter-based mobile application that lets you securely store and manag
   Add and generate time-based OTPs for your accounts with optional QR scanning.
 
 
+[![Download apk](https://custom-icon-badges.demolab.com/badge/-Download-blue?style=for-the-badge&logo=download&logoColor=white "Download apk")](https://github.com/monees007/Wallet/releases/download/v1.0.0/wallet-v1.0.0.apk)
 
 ## Contribute
 
