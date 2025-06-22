@@ -62,13 +62,21 @@ class CardDialogs {
     String cvv = '';
     File? frontImage;
     File? backImage;
-    String type = '';
+    String?
+    selectedType; // Make it nullable to represent no selection initially
 
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return StatefulBuilder(
           builder: (context, setState) {
+            // Define card types
+            final List<String> cardTypes = [
+              'Swiggy',
+              'SBI SimplyClick',
+              'Other Credit/Debit Card',
+            ];
+
             return AlertDialog(
               title: const Text('Add Credit/Debit Card'),
               content: Form(
@@ -83,8 +91,9 @@ class CardDialogs {
                         ),
                         keyboardType: TextInputType.number,
                         autofillHints: const [AutofillHints.creditCardNumber],
-                        validator: (value) =>
-                        value?.isEmpty ?? true ? 'Required' : null,
+                        validator:
+                            (value) =>
+                                value?.isEmpty ?? true ? 'Required' : null,
                         onSaved: (value) => cardNumber = value ?? '',
                       ),
                       TextFormField(
@@ -93,8 +102,9 @@ class CardDialogs {
                         decoration: const InputDecoration(
                           labelText: 'Card Holder',
                         ),
-                        validator: (value) =>
-                        value?.isEmpty ?? true ? 'Required' : null,
+                        validator:
+                            (value) =>
+                                value?.isEmpty ?? true ? 'Required' : null,
                         onSaved: (value) => cardHolder = value ?? '',
                       ),
                       TextFormField(
@@ -102,69 +112,105 @@ class CardDialogs {
                           labelText: 'Expiry Date (MM/YY)',
                         ),
                         keyboardType: TextInputType.datetime,
-                        autofillHints: const [AutofillHints.creditCardExpirationDate],
-                        validator: (value) =>
-                        value?.isEmpty ?? true ? 'Required' : null,
+                        autofillHints: const [
+                          AutofillHints.creditCardExpirationDate,
+                        ],
+                        validator:
+                            (value) =>
+                                value?.isEmpty ?? true ? 'Required' : null,
                         onSaved: (value) => expiryDate = value ?? '',
                       ),
                       TextFormField(
                         decoration: const InputDecoration(labelText: 'CVV'),
                         keyboardType: TextInputType.number,
-                        autofillHints: const [AutofillHints.creditCardSecurityCode],
-                        validator: (value) =>
-                        value?.isEmpty ?? true ? 'Required' : null,
+                        autofillHints: const [
+                          AutofillHints.creditCardSecurityCode,
+                        ],
+                        validator:
+                            (value) =>
+                                value?.isEmpty ?? true ? 'Required' : null,
                         onSaved: (value) => cvv = value ?? '',
                       ),
-                      TextFormField(
-                        decoration: const InputDecoration(labelText: 'Type (e.g., Visa, Mastercard)'),
-                        validator: (value) =>
-                        value?.isEmpty ?? true ? 'Required' : null,
-                        onSaved: (value) => type = value ?? '',
+                      // Dropdown for card type selection
+                      DropdownButtonFormField<String>(
+                        decoration: const InputDecoration(
+                          labelText: 'Card Type',
+                        ),
+                        value: selectedType,
+                        hint: const Text('Select Card Type'),
+                        items:
+                            cardTypes.map((String type) {
+                              return DropdownMenuItem<String>(
+                                value: type,
+                                child: Text(type),
+                              );
+                            }).toList(),
+                        onChanged: (String? newValue) {
+                          setState(() {
+                            selectedType = newValue;
+                            // Reset images if "Other Card" is deselected
+                            if (newValue != 'Other Credit/Debit Card') {
+                              frontImage = null;
+                              backImage = null;
+                            }
+                          });
+                        },
+                        validator:
+                            (value) =>
+                                value == null
+                                    ? 'Please select a card type'
+                                    : null,
+                        onSaved: (value) => selectedType = value,
                       ),
                       const SizedBox(height: 10),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: ElevatedButton.icon(
-                              onPressed: () async {
-                                final picker = ImagePicker();
-                                final pickedFile = await picker.pickImage(
-                                  source: ImageSource.gallery,
-                                );
-                                if (pickedFile != null) {
-                                  setState(() {
-                                    frontImage = File(pickedFile.path);
-                                  });
-                                }
-                              },
-                              icon: const Icon(Icons.image),
-                              label: Text(
-                                frontImage != null ? 'Front ✓' : 'Front Image',
+                      // Show image upload buttons only if "Other Credit Card" or "Other Debit Card" is selected
+                      if (selectedType == 'Other Credit Card' ||
+                          selectedType == 'Other Debit Card')
+                        Row(
+                          children: [
+                            Expanded(
+                              child: ElevatedButton.icon(
+                                onPressed: () async {
+                                  final picker = ImagePicker();
+                                  final pickedFile = await picker.pickImage(
+                                    source: ImageSource.gallery,
+                                  );
+                                  if (pickedFile != null) {
+                                    setState(() {
+                                      frontImage = File(pickedFile.path);
+                                    });
+                                  }
+                                },
+                                icon: const Icon(Icons.image),
+                                label: Text(
+                                  frontImage != null
+                                      ? 'Front ✓'
+                                      : 'Front Image',
+                                ),
                               ),
                             ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: ElevatedButton.icon(
-                              onPressed: () async {
-                                final picker = ImagePicker();
-                                final pickedFile = await picker.pickImage(
-                                  source: ImageSource.gallery,
-                                );
-                                if (pickedFile != null) {
-                                  setState(() {
-                                    backImage = File(pickedFile.path);
-                                  });
-                                }
-                              },
-                              icon: const Icon(Icons.image),
-                              label: Text(
-                                backImage != null ? 'Back ✓' : 'Back Image',
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: ElevatedButton.icon(
+                                onPressed: () async {
+                                  final picker = ImagePicker();
+                                  final pickedFile = await picker.pickImage(
+                                    source: ImageSource.gallery,
+                                  );
+                                  if (pickedFile != null) {
+                                    setState(() {
+                                      backImage = File(pickedFile.path);
+                                    });
+                                  }
+                                },
+                                icon: const Icon(Icons.image),
+                                label: Text(
+                                  backImage != null ? 'Back ✓' : 'Back Image',
+                                ),
                               ),
                             ),
-                          ),
-                        ],
-                      ),
+                          ],
+                        ),
                     ],
                   ),
                 ),
@@ -178,16 +224,20 @@ class CardDialogs {
                   onPressed: () {
                     if (formKey.currentState?.validate() ?? false) {
                       formKey.currentState?.save();
-                      cardService.addCreditCard(
-                        cardNumber,
-                        cardHolder,
-                        expiryDate,
-                        cvv,
-                        type,
-                        frontImage,
-                        backImage,
-                      );
-                      Navigator.of(context).pop(); // Close form dialog
+                      if (selectedType != null) {
+                        // Ensure a type is selected before adding
+                        cardService.addCreditCard(
+                          cardNumber,
+                          cardHolder,
+                          expiryDate,
+                          cvv,
+                          selectedType!,
+                          // Use selectedType! as it's validated to be not null
+                          frontImage,
+                          backImage,
+                        );
+                        Navigator.of(context).pop(); // Close form dialog
+                      }
                     }
                   },
                   child: const Text('Add'),
@@ -201,7 +251,10 @@ class CardDialogs {
   }
 
   // Dialog for Library Card Form
-  static void _showLibraryCardForm(BuildContext context, CardService cardService) {
+  static void _showLibraryCardForm(
+    BuildContext context,
+    CardService cardService,
+  ) {
     final formKey = GlobalKey<FormState>();
     String name = '';
     String idNumber = '';
@@ -227,21 +280,26 @@ class CardDialogs {
                     children: [
                       TextFormField(
                         decoration: const InputDecoration(labelText: 'Name'),
-                        validator: (value) =>
-                        value?.isEmpty ?? true ? 'Required' : null,
+                        validator:
+                            (value) =>
+                                value?.isEmpty ?? true ? 'Required' : null,
                         onSaved: (value) => name = value ?? '',
                       ),
                       TextFormField(
                         decoration: const InputDecoration(labelText: 'ID'),
-                        validator: (value) =>
-                        value?.isEmpty ?? true ? 'Required' : null,
+                        validator:
+                            (value) =>
+                                value?.isEmpty ?? true ? 'Required' : null,
                         onSaved: (value) => id = value ?? '',
                       ),
                       TextFormField(
-                        decoration: const InputDecoration(labelText: 'ID Number'),
+                        decoration: const InputDecoration(
+                          labelText: 'ID Number',
+                        ),
                         keyboardType: TextInputType.number,
-                        validator: (value) =>
-                        value?.isEmpty ?? true ? 'Required' : null,
+                        validator:
+                            (value) =>
+                                value?.isEmpty ?? true ? 'Required' : null,
                         onSaved: (value) => idNumber = value ?? '',
                       ),
                       TextFormField(
@@ -249,27 +307,31 @@ class CardDialogs {
                           labelText: 'Registration Number',
                         ),
                         keyboardType: TextInputType.number,
-                        validator: (value) =>
-                        value?.isEmpty ?? true ? 'Required' : null,
+                        validator:
+                            (value) =>
+                                value?.isEmpty ?? true ? 'Required' : null,
                         onSaved: (value) => registrationNumber = value ?? '',
                       ),
                       TextFormField(
                         decoration: const InputDecoration(labelText: 'Course'),
-                        validator: (value) =>
-                        value?.isEmpty ?? true ? 'Required' : null,
+                        validator:
+                            (value) =>
+                                value?.isEmpty ?? true ? 'Required' : null,
                         onSaved: (value) => course = value ?? '',
                       ),
                       TextFormField(
                         decoration: const InputDecoration(labelText: 'Session'),
                         keyboardType: TextInputType.number,
-                        validator: (value) =>
-                        value?.isEmpty ?? true ? 'Required' : null,
+                        validator:
+                            (value) =>
+                                value?.isEmpty ?? true ? 'Required' : null,
                         onSaved: (value) => session = value ?? '',
                       ),
                       TextFormField(
                         decoration: const InputDecoration(labelText: 'School'),
-                        validator: (value) =>
-                        value?.isEmpty ?? true ? 'Required' : null,
+                        validator:
+                            (value) =>
+                                value?.isEmpty ?? true ? 'Required' : null,
                         onSaved: (value) => school = value ?? '',
                       ),
                       const SizedBox(height: 10),
@@ -327,7 +389,10 @@ class CardDialogs {
   }
 
   // Dialog for Custom Card Form
-  static void _showCustomCardForm(BuildContext context, CardService cardService) {
+  static void _showCustomCardForm(
+    BuildContext context,
+    CardService cardService,
+  ) {
     final formKey = GlobalKey<FormState>();
     String cardName = '';
     File? frontImage;
@@ -350,8 +415,9 @@ class CardDialogs {
                         decoration: const InputDecoration(
                           labelText: 'Card Name',
                         ),
-                        validator: (value) =>
-                        value?.isEmpty ?? true ? 'Required' : null,
+                        validator:
+                            (value) =>
+                                value?.isEmpty ?? true ? 'Required' : null,
                         onSaved: (value) => cardName = value ?? '',
                       ),
                       const SizedBox(height: 16),

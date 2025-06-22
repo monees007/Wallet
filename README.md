@@ -19,7 +19,7 @@ A modern Flutter-based mobile application that lets you securely store and manag
 
 * **Secure Import & Export**
   Backup and restore your encrypted card data securely.
-* **Completly Offline**
+* **Completely Offline**
   No connection to Internet.
 
 

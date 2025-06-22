@@ -31,13 +31,13 @@ class CreditCardBack extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           color: Colors.blueGrey[900],
-          image: DecorationImage(
+          image: backImage!=''? DecorationImage(
             image:
                 backImage.contains('asset')
                     ? AssetImage(backImage)
                     : FileImage(File(backImage)),
             fit: BoxFit.cover,
-          ),
+          ) : null,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(

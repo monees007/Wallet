@@ -23,10 +23,10 @@ class CreditCardFront extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           color: Colors.blueGrey[900],
-          image: DecorationImage(
+          image: frontImage!=''? DecorationImage(
             image:  frontImage.contains('asset')?  AssetImage(frontImage): FileImage(File(frontImage)),
             fit: BoxFit.cover,
-          ),
+          ): null,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
