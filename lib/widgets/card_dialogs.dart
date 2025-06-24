@@ -132,7 +132,7 @@ class CardDialogs {
                           }
                           // Regular expression to check for MM/YY format
                           final RegExp expiryDateRegex = RegExp(
-                            r'^(0[1-9]|1[0-2])\/\d{2}$',
+                            r'^(0[1-9]|1[0-2])/\d{2}$',
                           );
                           if (value.length < 5 ||
                               !expiryDateRegex.hasMatch(value)) {
