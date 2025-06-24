@@ -1,16 +1,15 @@
 import 'package:flutter/material.dart';
-import 'dart:io';
 
 class CustomCard extends StatefulWidget {
   final String cardName;
-  final String? frontImagePath;
-  final String? backImagePath;
+  final ImageProvider<Object>? frontImageProvider;
+  final ImageProvider<Object>? backImageProvider;
 
   const CustomCard({
     super.key,
     required this.cardName,
-    this.frontImagePath,
-    this.backImagePath,
+    this.frontImageProvider,
+    this.backImageProvider,
   });
 
   @override
@@ -54,7 +53,7 @@ class _CustomCardState extends State<CustomCard>
   }
 
   Widget _buildCardSide({
-    required String? imagePath,
+    required ImageProvider<Object>? imageProvider,
     required bool isFront,
   }) {
     return AspectRatio(
@@ -62,7 +61,7 @@ class _CustomCardState extends State<CustomCard>
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(15),
           border: Border.all(color: Colors.black87, width: 0.4),
           boxShadow: [
             BoxShadow(
@@ -78,30 +77,20 @@ class _CustomCardState extends State<CustomCard>
           child: Stack(
             children: [
               // Background image or color
-              SizedBox(
-                width: double.infinity,
-                height: double.infinity,
-                child:
-                imagePath != null
-                        ? Image.file(
-                          File(imagePath),
-                          fit: BoxFit.fill,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Container(
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                  colors: [
-                                    Colors.purple.shade400,
-                                    Colors.blue.shade600,
-                                  ],
-                                ),
-                              ),
-                            );
-                          },
-                        )
-                        : null,
+              Container(
+                decoration: BoxDecoration(
+                  image: imageProvider != null
+                      ? DecorationImage(
+                    image: imageProvider,
+                    fit: BoxFit.cover,
+                  )
+                      : null,
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [Colors.purple.shade400, Colors.blue.shade600],
+                  ),
+                ),
               ),
               // Card content
             ],
@@ -110,7 +99,6 @@ class _CustomCardState extends State<CustomCard>
       ),
     );
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -129,14 +117,14 @@ class _CustomCardState extends State<CustomCard>
             child:
                 isShowingFront
                     ? _buildCardSide(
-                      imagePath: widget.frontImagePath,
+                      imageProvider: widget.frontImageProvider,
                       isFront: true,
                     )
                     : Transform(
                       alignment: Alignment.center,
                       transform: Matrix4.identity()..rotateY(3.14159),
                       child: _buildCardSide(
-                        imagePath: widget.backImagePath,
+                        imageProvider: widget.backImageProvider,
                         isFront: false,
                       ),
                     ),

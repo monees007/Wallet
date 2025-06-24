@@ -54,7 +54,10 @@ class CardDialogs {
   }
 
   // Dialog for Credit/Debit Card Form
-  static void _showCreditCardForm(BuildContext context, CardService cardService) {
+  static void _showCreditCardForm(
+    BuildContext context,
+    CardService cardService,
+  ) {
     final formKey = GlobalKey<FormState>();
     String cardNumber = '';
     String cardHolder = '';
@@ -62,13 +65,19 @@ class CardDialogs {
     String cvv = '';
     File? frontImage;
     File? backImage;
-    String type = '';
+    String? selectedType;
 
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return StatefulBuilder(
           builder: (context, setState) {
+            final List<String> cardTypes = [
+              'Swiggy',
+              'SBI SimplyClick',
+              'Other Credit/Debit Card',
+            ];
+
             return AlertDialog(
               title: const Text('Add Credit/Debit Card'),
               content: Form(
@@ -83,8 +92,16 @@ class CardDialogs {
                         ),
                         keyboardType: TextInputType.number,
                         autofillHints: const [AutofillHints.creditCardNumber],
-                        validator: (value) =>
-                        value?.isEmpty ?? true ? 'Required' : null,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Card number is required';
+                          }
+                          if (value.length < 16) {
+                            return 'Card number must be at least 16 digits';
+                          }
+                          // You could add more advanced checks here (e.g., Luhn algorithm)
+                          return null; // Return null if the input is valid
+                        },
                         onSaved: (value) => cardNumber = value ?? '',
                       ),
                       TextFormField(
@@ -93,8 +110,12 @@ class CardDialogs {
                         decoration: const InputDecoration(
                           labelText: 'Card Holder',
                         ),
-                        validator: (value) =>
-                        value?.isEmpty ?? true ? 'Required' : null,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Card holder name is required';
+                          }
+                          return null;
+                        },
                         onSaved: (value) => cardHolder = value ?? '',
                       ),
                       TextFormField(
@@ -102,69 +123,118 @@ class CardDialogs {
                           labelText: 'Expiry Date (MM/YY)',
                         ),
                         keyboardType: TextInputType.datetime,
-                        autofillHints: const [AutofillHints.creditCardExpirationDate],
-                        validator: (value) =>
-                        value?.isEmpty ?? true ? 'Required' : null,
+                        autofillHints: const [
+                          AutofillHints.creditCardExpirationDate,
+                        ],
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Expiry date is required';
+                          }
+                          // Regular expression to check for MM/YY format
+                          final RegExp expiryDateRegex = RegExp(
+                            r'^(0[1-9]|1[0-2])/\d{2}$',
+                          );
+                          if (value.length < 5 ||
+                              !expiryDateRegex.hasMatch(value)) {
+                            return 'Please enter a valid date (MM/YY)';
+                          }
+                          return null;
+                        },
                         onSaved: (value) => expiryDate = value ?? '',
                       ),
                       TextFormField(
-                        decoration: const InputDecoration(labelText: 'CVV'),
+                        decoration: const InputDecoration(
+                          labelText: 'CVV (Optional)',
+                        ),
                         keyboardType: TextInputType.number,
-                        autofillHints: const [AutofillHints.creditCardSecurityCode],
-                        validator: (value) =>
-                        value?.isEmpty ?? true ? 'Required' : null,
+                        autofillHints: const [
+                          AutofillHints.creditCardSecurityCode,
+                        ],
+                        validator: (value) {
+                          // If a value is entered, validate its length. Otherwise, it's valid.
+                          if (value != null &&
+                              value.isNotEmpty &&
+                              value.length < 3) {
+                            return 'CVV must be at least 3 digits';
+                          }
+                          return null;
+                        },
                         onSaved: (value) => cvv = value ?? '',
                       ),
-                      TextFormField(
-                        decoration: const InputDecoration(labelText: 'Type (e.g., Visa, Mastercard)'),
-                        validator: (value) =>
-                        value?.isEmpty ?? true ? 'Required' : null,
-                        onSaved: (value) => type = value ?? '',
+
+                      DropdownButtonFormField<String>(
+                        decoration: const InputDecoration(
+                          labelText: 'Card Type',
+                        ),
+                        value: selectedType,
+                        hint: const Text('Select Card Type'),
+                        items:
+                            cardTypes.map((String type) {
+                              return DropdownMenuItem<String>(
+                                value: type,
+                                child: Text(type),
+                              );
+                            }).toList(),
+                        onChanged: (String? newValue) {
+                          setState(() {
+                            selectedType = newValue;
+                          });
+                        },
+                        validator:
+                            (value) =>
+                                value == null
+                                    ? 'Please select a card type'
+                                    : null,
+                        onSaved: (value) => selectedType = value,
                       ),
                       const SizedBox(height: 10),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: ElevatedButton.icon(
-                              onPressed: () async {
-                                final picker = ImagePicker();
-                                final pickedFile = await picker.pickImage(
-                                  source: ImageSource.gallery,
-                                );
-                                if (pickedFile != null) {
-                                  setState(() {
-                                    frontImage = File(pickedFile.path);
-                                  });
-                                }
-                              },
-                              icon: const Icon(Icons.image),
-                              label: Text(
-                                frontImage != null ? 'Front ✓' : 'Front Image',
+                      // CORRECTED: The condition now matches the dropdown item exactly.
+                      if (selectedType == 'Other Credit/Debit Card')
+                        Row(
+                          children: [
+                            Expanded(
+                              child: ElevatedButton.icon(
+                                onPressed: () async {
+                                  final picker = ImagePicker();
+                                  final pickedFile = await picker.pickImage(
+                                    source: ImageSource.gallery,
+                                  );
+                                  if (pickedFile != null) {
+                                    setState(
+                                      () => frontImage = File(pickedFile.path),
+                                    );
+                                  }
+                                },
+                                icon: const Icon(Icons.image),
+                                label: Text(
+                                  frontImage != null
+                                      ? 'Front ✓'
+                                      : 'Front Image',
+                                ),
                               ),
                             ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: ElevatedButton.icon(
-                              onPressed: () async {
-                                final picker = ImagePicker();
-                                final pickedFile = await picker.pickImage(
-                                  source: ImageSource.gallery,
-                                );
-                                if (pickedFile != null) {
-                                  setState(() {
-                                    backImage = File(pickedFile.path);
-                                  });
-                                }
-                              },
-                              icon: const Icon(Icons.image),
-                              label: Text(
-                                backImage != null ? 'Back ✓' : 'Back Image',
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: ElevatedButton.icon(
+                                onPressed: () async {
+                                  final picker = ImagePicker();
+                                  final pickedFile = await picker.pickImage(
+                                    source: ImageSource.gallery,
+                                  );
+                                  if (pickedFile != null) {
+                                    setState(
+                                      () => backImage = File(pickedFile.path),
+                                    );
+                                  }
+                                },
+                                icon: const Icon(Icons.image),
+                                label: Text(
+                                  backImage != null ? 'Back ✓' : 'Back Image',
+                                ),
                               ),
                             ),
-                          ),
-                        ],
-                      ),
+                          ],
+                        ),
                     ],
                   ),
                 ),
@@ -178,16 +248,17 @@ class CardDialogs {
                   onPressed: () {
                     if (formKey.currentState?.validate() ?? false) {
                       formKey.currentState?.save();
-                      cardService.addCreditCard(
+                      // The service method name was updated for clarity.
+                      cardService.addPaymentCard(
                         cardNumber,
                         cardHolder,
                         expiryDate,
                         cvv,
-                        type,
+                        selectedType!,
                         frontImage,
                         backImage,
                       );
-                      Navigator.of(context).pop(); // Close form dialog
+                      Navigator.of(context).pop();
                     }
                   },
                   child: const Text('Add'),
@@ -201,7 +272,10 @@ class CardDialogs {
   }
 
   // Dialog for Library Card Form
-  static void _showLibraryCardForm(BuildContext context, CardService cardService) {
+  static void _showLibraryCardForm(
+    BuildContext context,
+    CardService cardService,
+  ) {
     final formKey = GlobalKey<FormState>();
     String name = '';
     String idNumber = '';
@@ -210,7 +284,6 @@ class CardDialogs {
     String session = '';
     String school = '';
     File? profile;
-    String id = '';
 
     showDialog(
       context: context,
@@ -227,49 +300,46 @@ class CardDialogs {
                     children: [
                       TextFormField(
                         decoration: const InputDecoration(labelText: 'Name'),
-                        validator: (value) =>
-                        value?.isEmpty ?? true ? 'Required' : null,
+                        validator:
+                            (value) =>
+                                value?.isEmpty ?? true ? 'Required' : null,
                         onSaved: (value) => name = value ?? '',
                       ),
                       TextFormField(
-                        decoration: const InputDecoration(labelText: 'ID'),
-                        validator: (value) =>
-                        value?.isEmpty ?? true ? 'Required' : null,
-                        onSaved: (value) => id = value ?? '',
-                      ),
-                      TextFormField(
-                        decoration: const InputDecoration(labelText: 'ID Number'),
-                        keyboardType: TextInputType.number,
-                        validator: (value) =>
-                        value?.isEmpty ?? true ? 'Required' : null,
+                        decoration: const InputDecoration(
+                          labelText: 'ID Number',
+                        ),
+                        keyboardType: TextInputType.text,
+                        validator:
+                            (value) =>
+                                value?.isEmpty ?? true ? 'Required' : null,
                         onSaved: (value) => idNumber = value ?? '',
                       ),
+                      // CORRECTED: These fields are now optional, validator removed.
                       TextFormField(
                         decoration: const InputDecoration(
-                          labelText: 'Registration Number',
+                          labelText: 'Registration Number (Optional)',
                         ),
                         keyboardType: TextInputType.number,
-                        validator: (value) =>
-                        value?.isEmpty ?? true ? 'Required' : null,
                         onSaved: (value) => registrationNumber = value ?? '',
                       ),
                       TextFormField(
-                        decoration: const InputDecoration(labelText: 'Course'),
-                        validator: (value) =>
-                        value?.isEmpty ?? true ? 'Required' : null,
+                        decoration: const InputDecoration(
+                          labelText: 'Course (Optional)',
+                        ),
                         onSaved: (value) => course = value ?? '',
                       ),
                       TextFormField(
-                        decoration: const InputDecoration(labelText: 'Session'),
-                        keyboardType: TextInputType.number,
-                        validator: (value) =>
-                        value?.isEmpty ?? true ? 'Required' : null,
+                        decoration: const InputDecoration(
+                          labelText: 'Session (Optional)',
+                        ),
+                        keyboardType: TextInputType.text,
                         onSaved: (value) => session = value ?? '',
                       ),
                       TextFormField(
-                        decoration: const InputDecoration(labelText: 'School'),
-                        validator: (value) =>
-                        value?.isEmpty ?? true ? 'Required' : null,
+                        decoration: const InputDecoration(
+                          labelText: 'School (Optional)',
+                        ),
                         onSaved: (value) => school = value ?? '',
                       ),
                       const SizedBox(height: 10),
@@ -280,11 +350,10 @@ class CardDialogs {
                             source: ImageSource.gallery,
                           );
                           if (pickedFile != null) {
-                            setState(() {
-                              profile = File(pickedFile.path);
-                            });
+                            setState(() => profile = File(pickedFile.path));
                           }
                         },
+
                         icon: const Icon(Icons.image),
                         label: Text(
                           profile != null ? 'Profile ✓' : 'Profile Image',
@@ -303,6 +372,7 @@ class CardDialogs {
                   onPressed: () {
                     if (formKey.currentState?.validate() ?? false) {
                       formKey.currentState?.save();
+                      // CORRECTED: Removed the extra 'id' parameter.
                       cardService.addLibraryCard(
                         name,
                         idNumber,
@@ -310,10 +380,9 @@ class CardDialogs {
                         course,
                         session,
                         school,
-                        id,
                         profile,
                       );
-                      Navigator.of(context).pop(); // Close form dialog
+                      Navigator.of(context).pop();
                     }
                   },
                   child: const Text('Add'),
@@ -327,7 +396,10 @@ class CardDialogs {
   }
 
   // Dialog for Custom Card Form
-  static void _showCustomCardForm(BuildContext context, CardService cardService) {
+  static void _showCustomCardForm(
+    BuildContext context,
+    CardService cardService,
+  ) {
     final formKey = GlobalKey<FormState>();
     String cardName = '';
     File? frontImage;
@@ -350,8 +422,9 @@ class CardDialogs {
                         decoration: const InputDecoration(
                           labelText: 'Card Name',
                         ),
-                        validator: (value) =>
-                        value?.isEmpty ?? true ? 'Required' : null,
+                        validator:
+                            (value) =>
+                                value?.isEmpty ?? true ? 'Required' : null,
                         onSaved: (value) => cardName = value ?? '',
                       ),
                       const SizedBox(height: 16),
@@ -365,9 +438,9 @@ class CardDialogs {
                                   source: ImageSource.gallery,
                                 );
                                 if (pickedFile != null) {
-                                  setState(() {
-                                    frontImage = File(pickedFile.path);
-                                  });
+                                  setState(
+                                    () => frontImage = File(pickedFile.path),
+                                  );
                                 }
                               },
                               icon: const Icon(Icons.image),
@@ -385,9 +458,9 @@ class CardDialogs {
                                   source: ImageSource.gallery,
                                 );
                                 if (pickedFile != null) {
-                                  setState(() {
-                                    backImage = File(pickedFile.path);
-                                  });
+                                  setState(
+                                    () => backImage = File(pickedFile.path),
+                                  );
                                 }
                               },
                               icon: const Icon(Icons.image),
@@ -398,7 +471,6 @@ class CardDialogs {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 8),
                     ],
                   ),
                 ),
@@ -417,7 +489,7 @@ class CardDialogs {
                         frontImage,
                         backImage,
                       );
-                      Navigator.of(context).pop(); // Close form dialog
+                      Navigator.of(context).pop();
                     }
                   },
                   child: const Text('Add'),

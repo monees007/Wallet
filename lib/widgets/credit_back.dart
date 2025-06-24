@@ -1,10 +1,9 @@
-import 'dart:io';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter/material.dart';
 
 class CreditCardBack extends StatelessWidget {
   final String cvv;
-  final String backImage;
+  final ImageProvider<Object>? backImageProvider;
   final String cardHolder;
 
   String toTitleCase(String input) {
@@ -20,7 +19,7 @@ class CreditCardBack extends StatelessWidget {
   const CreditCardBack({
     super.key,
     required this.cvv,
-    required this.backImage,
+    required this.backImageProvider,
     required this.cardHolder,
   });
 
@@ -30,14 +29,14 @@ class CreditCardBack extends StatelessWidget {
       aspectRatio: 85.6 / 53.98,
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.blueGrey[900],
-          image: DecorationImage(
-            image:
-                backImage.contains('asset')
-                    ? AssetImage(backImage)
-                    : FileImage(File(backImage)),
+          // Use the image provider if it exists, otherwise use a solid color.
+          image: backImageProvider != null
+              ? DecorationImage(
+            image: backImageProvider!,
             fit: BoxFit.cover,
-          ),
+          )
+              : null,
+          color: backImageProvider == null ? Colors.blueGrey[900] : null,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
