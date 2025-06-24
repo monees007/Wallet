@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:dynamic_color/dynamic_color.dart';
-import 'card_page.dart'; // Your existing page for cards
+import 'package:wallet/services/database.dart';
+import 'card_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -18,15 +19,14 @@ class MyApp extends StatelessWidget {
           theme: ThemeData(
             useMaterial3: true,
             colorScheme:
-                lightDynamic ?? ColorScheme.fromSeed(seedColor: Colors.cyan),
+            lightDynamic ?? ColorScheme.fromSeed(seedColor: Colors.cyan),
             textTheme: const TextTheme(
               titleLarge: TextStyle(fontWeight: FontWeight.bold),
             ),
           ),
           darkTheme: ThemeData(
             useMaterial3: true,
-            colorScheme:
-                darkDynamic ??
+            colorScheme: darkDynamic ??
                 ColorScheme.fromSeed(
                   seedColor: Colors.cyan,
                   brightness: Brightness.dark,
@@ -36,7 +36,6 @@ class MyApp extends StatelessWidget {
             ),
           ),
           themeMode: ThemeMode.system,
-          // The home screen is now MainPage, which handles the navigation
           home: const MainPage(),
         );
       },
@@ -44,7 +43,7 @@ class MyApp extends StatelessWidget {
   }
 }
 
-// This new widget manages the state of the bottom navigation bar
+// This widget now manages the single database instance for the entire app.
 class MainPage extends StatefulWidget {
   const MainPage({super.key});
 
@@ -55,27 +54,47 @@ class MainPage extends StatefulWidget {
 class _MainPageState extends State<MainPage> {
   int _selectedIndex = 0;
 
-  // List of the pages that the navigation bar will switch between.
-  // Each page is a separate widget.
-  static final List<Widget> _widgetOptions = <Widget>[
-    const MyCardPage(title: 'Wallet'), // Your existing card page
-    const NotesPage(), // The new page for notes
-    const CodesPage(), // The new page for 2-step verification codes
-  ];
+  // 1. Create the single database instance here.
+  late final AppDatabase _database;
 
-  // This function is called when a navigation bar item is tapped.
+  // 2. The list of pages is no longer static. It will be initialized with the database instance.
+  late final List<Widget> _widgetOptions;
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize the database when this widget is first created.
+    _database = AppDatabase();
+
+    // 3. Pass the single database instance to each page.
+    _widgetOptions = <Widget>[
+      MyCardPage(title: 'Wallet', database: _database), // Pass instance
+      NotesPage(database: _database), // Pass instance
+      CodesPage(database: _database), // Pass instance
+    ];
+  }
+
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
     });
   }
 
+  // 4. IMPORTANT: Dispose the database when the app is closed.
+  @override
+  void dispose() {
+    _database.close();
+    super.dispose();
+  }
+
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // The body displays the widget from the list based on the selected index.
-      // It's assumed that each page (e.g., MyCardPage) has its own AppBar.
-      body: _widgetOptions.elementAt(_selectedIndex),
+      body: IndexedStack(
+        index: _selectedIndex,
+        children: _widgetOptions,
+      ),
       bottomNavigationBar: BottomNavigationBar(
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(
@@ -90,8 +109,6 @@ class _MainPageState extends State<MainPage> {
         ],
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
-        // The handler for tap events
-        // A few style tweaks for a modern look
         selectedItemColor: Theme.of(context).colorScheme.primary,
         unselectedItemColor: Colors.grey,
         showUnselectedLabels: true,
@@ -100,10 +117,10 @@ class _MainPageState extends State<MainPage> {
   }
 }
 
-// A placeholder widget for the "Notes" page.
-// You can build this out into a full feature.
+// UPDATED: This widget now accepts the database instance.
 class NotesPage extends StatelessWidget {
-  const NotesPage({super.key});
+  final AppDatabase database;
+  const NotesPage({super.key, required this.database});
 
   @override
   Widget build(BuildContext context) {
@@ -119,10 +136,10 @@ class NotesPage extends StatelessWidget {
   }
 }
 
-// A placeholder widget for the "Two-Step Verification" page.
-// You can build this out into a full feature.
+// UPDATED: This widget now accepts the database instance.
 class CodesPage extends StatelessWidget {
-  const CodesPage({super.key});
+  final AppDatabase database;
+  const CodesPage({super.key, required this.database});
 
   @override
   Widget build(BuildContext context) {
@@ -137,3 +154,4 @@ class CodesPage extends StatelessWidget {
     );
   }
 }
+

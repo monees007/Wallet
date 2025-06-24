@@ -1,46 +1,83 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:wallet/services/card_service.dart';
+import 'package:wallet/services/database.dart';
 import 'package:wallet/widgets/card_dialogs.dart';
 import 'package:wallet/widgets/card_display.dart';
 
-
 class MyCardPage extends StatefulWidget {
-  const MyCardPage({super.key, required this.title});
-
+  // 1. Add database to the constructor
+  final AppDatabase database;
   final String title;
+
+  const MyCardPage({
+    super.key,
+    required this.title,
+    required this.database, // This is now required
+  });
 
   @override
   State<MyCardPage> createState() => _MyCardPageState();
 }
 
 class _MyCardPageState extends State<MyCardPage> {
-  final _secureStorage = const FlutterSecureStorage();
-  List<Map<String, dynamic>> _cards = [];
-  bool isEditing = false;
-  Set<int> selectedIndices = {};
-
-  // Instantiate CardService
+  // The service that handles all database logic
   late final CardService _cardService;
+
+  // --- State Variables ---
+  List<DisplayableCard> _cards = [];
+  bool _isEditing = false;
+  final Set<DisplayableCard> _selectedCards = {};
 
   @override
   void initState() {
     super.initState();
-    // Initialize CardService, passing the setState callback for card updates
+    // 2. Initialize CardService using the database instance passed from the parent widget
     _cardService = CardService(
-      storage: _secureStorage,
+      database: widget.database, // Use the instance from the widget
       onCardsUpdated: (newCards) {
-        setState(() {
-          _cards = newCards;
-        });
+        if (mounted) {
+          setState(() {
+            _cards = newCards;
+          });
+        }
       },
       showSnackBar: (message) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+          ScaffoldMessenger.of(context)
+              .showSnackBar(SnackBar(content: Text(message)));
         }
       },
     );
-    _cardService.loadCards(); // Load cards initially
+
+    // 3. Load cards initially
+    _cardService.loadCards();
+  }
+
+  void _toggleEditMode() {
+    setState(() {
+      _isEditing = !_isEditing;
+      _selectedCards.clear();
+    });
+  }
+
+  void _handleCardTap(DisplayableCard card) {
+    if (_isEditing) {
+      setState(() {
+        if (_selectedCards.contains(card)) {
+          _selectedCards.remove(card);
+        } else {
+          _selectedCards.add(card);
+        }
+      });
+    }
+  }
+
+  void _handleDelete() async {
+    // Await the deletion to complete before updating the UI
+    await _cardService.deleteCards(_selectedCards);
+    if (mounted) {
+      _toggleEditMode();
+    }
   }
 
   @override
@@ -61,24 +98,13 @@ class _MyCardPageState extends State<MyCardPage> {
             onPressed: () => _cardService.importCards(context),
           ),
           IconButton(
-            icon: Icon(isEditing ? Icons.close : Icons.edit),
-            onPressed: () {
-              setState(() {
-                isEditing = !isEditing;
-                selectedIndices.clear(); // Clear selection when toggling edit mode
-              });
-            },
+            icon: Icon(_isEditing ? Icons.close : Icons.edit),
+            onPressed: _toggleEditMode,
           ),
-          if (isEditing && selectedIndices.isNotEmpty) // Only show delete if editing and cards are selected
+          if (_isEditing && _selectedCards.isNotEmpty)
             IconButton(
               icon: const Icon(Icons.delete),
-              onPressed: () {
-                _cardService.deleteCards(selectedIndices);
-                setState(() {
-                  selectedIndices.clear();
-                  isEditing = false; // Exit edit mode after deletion
-                });
-              },
+              onPressed: _handleDelete,
             ),
         ],
       ),
@@ -87,48 +113,40 @@ class _MyCardPageState extends State<MyCardPage> {
           padding: const EdgeInsets.fromLTRB(8, 13, 8, 100),
           itemCount: _cards.length,
           itemBuilder: (context, index) {
-            final card = _cards[index];
-            bool isSelected = selectedIndices.contains(index);
+            final displayableCard = _cards[index];
+            final bool isSelected = _selectedCards.contains(displayableCard);
+            final cardDataMap = (displayableCard.data as dynamic).toJson();
 
             return GestureDetector(
               onLongPress: () {
-                // If not already editing, start editing and select the current card
-                if (!isEditing) {
+                if (!_isEditing) {
                   setState(() {
-                    isEditing = true;
-                    selectedIndices.add(index);
+                    _isEditing = true;
+                    _selectedCards.add(displayableCard);
                   });
                 }
               },
-              onTap: () {
-                // If editing, toggle selection on tap
-                if (isEditing) {
-                  setState(() {
-                    if (isSelected) {
-                      selectedIndices.remove(index);
-                    } else {
-                      selectedIndices.add(index);
-                    }
-                  });
-                }
-                // Optionally, add logic for viewing card details when not editing
-              },
+              onTap: () => _handleCardTap(displayableCard),
               child: Column(
                 children: [
                   Stack(
+                    alignment: Alignment.bottomRight,
                     children: [
-                      // Use the centralized card building function
-                      buildCardWidget(card),
-                      if (isEditing)
-                        Positioned(
-                          bottom: 8,
-                          right: 8,
+                      buildCardWidget(cardDataMap),
+                      if (_isEditing)
+                        Padding(
+                          padding: const EdgeInsets.all(8.0),
                           child: Icon(
                             isSelected
                                 ? Icons.check_circle
                                 : Icons.circle_outlined,
-                            color: isSelected ? Theme.of(context).colorScheme.primary : Colors.grey,
+                            color: isSelected
+                                ? Theme.of(context).colorScheme.primary
+                                : Colors.grey.withOpacity(0.8),
                             size: 30,
+                            shadows: const [
+                              Shadow(color: Colors.black45, blurRadius: 4)
+                            ],
                           ),
                         ),
                     ],

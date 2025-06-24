@@ -8,8 +8,9 @@ class FlipCardWidget extends StatefulWidget {
   final String cardHolder;
   final String expiryDate;
   final String cvv;
-  final String frontImage;
-  final String backImage;
+  // UPDATED: Changed from String to nullable ImageProvider
+  final ImageProvider<Object>? frontImageProvider;
+  final ImageProvider<Object>? backImageProvider;
 
   const FlipCardWidget({
     super.key,
@@ -17,7 +18,9 @@ class FlipCardWidget extends StatefulWidget {
     required this.cardHolder,
     required this.expiryDate,
     required this.cvv,
-    required this.frontImage, required this.backImage,
+    // UPDATED: Now accepts ImageProvider
+    this.frontImageProvider,
+    this.backImageProvider,
   });
 
   @override
@@ -26,25 +29,34 @@ class FlipCardWidget extends StatefulWidget {
 
 class _FlipCardWidgetState extends State<FlipCardWidget>
     with SingleTickerProviderStateMixin {
-  bool _showFront = true;
   late AnimationController _controller;
   late Animation<double> _animation;
 
   @override
   void initState() {
-    _controller =
-        AnimationController(vsync: this, duration: const Duration(milliseconds: 500));
-    _animation = Tween<double>(begin: 0, end: pi).animate(_controller);
     super.initState();
+    _controller = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 500));
+    // This animation flips the card from 0 to 180 degrees (pi radians)
+    _animation = Tween<double>(begin: 0, end: pi).animate(_controller);
   }
 
   void _flipCard() {
-    if (_showFront) {
-      _controller.forward();
-    } else {
-      _controller.reverse();
+    // Forward animation shows the back, reverse shows the front
+    if (_controller.isCompleted || _controller.isDismissed) {
+      if (_controller.isDismissed) {
+        _controller.forward();
+      } else {
+        _controller.reverse();
+      }
     }
-    _showFront = !_showFront;
+  }
+
+  @override
+  void dispose() {
+    // It's important to dispose of the controller to free up resources.
+    _controller.dispose();
+    super.dispose();
   }
 
   @override
@@ -54,23 +66,31 @@ class _FlipCardWidgetState extends State<FlipCardWidget>
       child: AnimatedBuilder(
         animation: _animation,
         builder: (context, child) {
-          final isFront = _animation.value < pi / 2;
+          // Determine if the front of the card should be shown
+          final isFront = _animation.value < (pi / 2);
           return Transform(
             alignment: Alignment.center,
+            // Apply a 3D rotation effect
             transform: Matrix4.identity()
               ..setEntry(3, 2, 0.001)
               ..rotateY(_animation.value),
             child: isFront
                 ? CreditCardFront(
-              frontImage: widget.frontImage,
+              // UPDATED: Pass the ImageProvider down
+              frontImageProvider: widget.frontImageProvider,
               cardNumber: widget.cardNumber,
               cardHolder: widget.cardHolder,
               expiryDate: widget.expiryDate,
             )
                 : Transform(
+              // Rotate the back of the card so it's not mirrored
               alignment: Alignment.center,
               transform: Matrix4.rotationY(pi),
-              child: CreditCardBack(cvv: widget.cvv, backImage:widget.backImage, cardHolder:widget.cardHolder),
+              child: CreditCardBack(
+                  cvv: widget.cvv,
+                  // UPDATED: Pass the ImageProvider down
+                  backImageProvider: widget.backImageProvider,
+                  cardHolder: widget.cardHolder),
             ),
           );
         },
