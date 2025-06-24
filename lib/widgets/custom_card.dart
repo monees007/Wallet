@@ -53,7 +53,7 @@ class _CustomCardState extends State<CustomCard>
   }
 
   Widget _buildCardSide({
-    required ImageProvider<Object>? ImageProvider,
+    required ImageProvider<Object>? imageProvider,
     required bool isFront,
   }) {
     return AspectRatio(
@@ -79,9 +79,9 @@ class _CustomCardState extends State<CustomCard>
               // Background image or color
               Container(
                 decoration: BoxDecoration(
-                  image: ImageProvider != null
+                  image: imageProvider != null
                       ? DecorationImage(
-                    image: ImageProvider,
+                    image: imageProvider,
                     fit: BoxFit.cover,
                   )
                       : null,
@@ -117,14 +117,14 @@ class _CustomCardState extends State<CustomCard>
             child:
                 isShowingFront
                     ? _buildCardSide(
-                      ImageProvider: widget.frontImageProvider,
+                      imageProvider: widget.frontImageProvider,
                       isFront: true,
                     )
                     : Transform(
                       alignment: Alignment.center,
                       transform: Matrix4.identity()..rotateY(3.14159),
                       child: _buildCardSide(
-                        ImageProvider: widget.backImageProvider,
+                        imageProvider: widget.backImageProvider,
                         isFront: false,
                       ),
                     ),

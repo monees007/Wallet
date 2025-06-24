@@ -145,7 +145,7 @@ class CardService {
 
   // --- Card Addition Methods ---
 
-  Future<void> addPaymentCard(String cardNumber, String cardHolder, String expiryDate, String cvv, String type, File? frontImageFile, File? backImageFile) async {
+  Future<void> addPaymentCard(String cardNumber, String cardHolder, String expiryDate, String? cvv, String type, File? frontImageFile, File? backImageFile) async {
     try {
       final Uint8List? frontBytes = await frontImageFile?.readAsBytes();
       final Uint8List? backBytes = await backImageFile?.readAsBytes();
@@ -231,7 +231,7 @@ class CardService {
       await loadCards(); // Refresh the list from the database
       _showSnackBar('Selected cards deleted!');
     } catch (e) {
-      print('Error deleting cards: $e');
+      _showSnackBar('Error deleting cards: $e');
     }
   }
 }

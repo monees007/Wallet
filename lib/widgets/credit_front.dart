@@ -47,7 +47,7 @@ class CreditCardFront extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.5),
+              color: Colors.black.withAlpha(127),
               spreadRadius: 2,
               blurRadius: 10,
               offset: const Offset(0, 5),
@@ -113,7 +113,7 @@ class CreditCardFront extends StatelessWidget {
         Text(
           label,
           style: TextStyle(
-            color: Colors.white.withOpacity(0.8),
+            color: Colors.white.withAlpha(204),
             fontSize: 10,
             shadows: const [
               Shadow(

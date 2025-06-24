@@ -142,7 +142,7 @@ class _MyCardPageState extends State<MyCardPage> {
                                 : Icons.circle_outlined,
                             color: isSelected
                                 ? Theme.of(context).colorScheme.primary
-                                : Colors.grey.withOpacity(0.8),
+                                : Colors.grey.withAlpha(80),
                             size: 30,
                             shadows: const [
                               Shadow(color: Colors.black45, blurRadius: 4)
