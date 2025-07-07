@@ -26,7 +26,7 @@ class _CustomCardState extends State<CustomCard>
   void initState() {
     super.initState();
     _controller = AnimationController(
-      duration: const Duration(milliseconds: 600),
+      duration: const Duration(milliseconds: 400),
       vsync: this,
     );
     _animation = Tween<double>(
@@ -65,7 +65,7 @@ class _CustomCardState extends State<CustomCard>
           border: Border.all(color: Colors.black87, width: 0.4),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.2),
+              color: Colors.black.withAlpha(67),
               spreadRadius: 2,
               blurRadius: 10,
               offset: const Offset(0, 5),

@@ -98,8 +98,8 @@ Widget buildCardWidget(Map<String, dynamic> cardData) {
   // Fallback for any unknown card data structure
   return Container(
     padding: const EdgeInsets.all(16.0),
-    child: Text(cardData.toString()),
-    // child: Text('Unknown card Type'),
+    child: Text('Unknown card Type'),
+    // child: Text(cardData.toString()),
 
   );
 }

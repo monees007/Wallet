@@ -12,12 +12,14 @@ class MyCardPage extends StatefulWidget {
   const MyCardPage({
     super.key,
     required this.title,
-    required this.database, // This is now required
+    required this.database,
   });
 
   @override
   State<MyCardPage> createState() => _MyCardPageState();
 }
+
+
 
 class _MyCardPageState extends State<MyCardPage> {
   // The service that handles all database logic
@@ -43,8 +45,9 @@ class _MyCardPageState extends State<MyCardPage> {
       },
       showSnackBar: (message) {
         if (mounted) {
-          ScaffoldMessenger.of(context)
-              .showSnackBar(SnackBar(content: Text(message)));
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(message)));
         }
       },
     );
@@ -65,6 +68,9 @@ class _MyCardPageState extends State<MyCardPage> {
       setState(() {
         if (_selectedCards.contains(card)) {
           _selectedCards.remove(card);
+          if (_selectedCards.isEmpty) {
+            _toggleEditMode();
+          }
         } else {
           _selectedCards.add(card);
         }
@@ -84,20 +90,10 @@ class _MyCardPageState extends State<MyCardPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: Text(widget.title),
+        title: Text(_isEditing ? "${_selectedCards.length} Selected" :widget.title),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.file_upload),
-            tooltip: 'Export Cards',
-            onPressed: () => _cardService.exportCards(),
-          ),
-          IconButton(
-            icon: const Icon(Icons.file_download),
-            tooltip: 'Import Cards',
-            onPressed: () => _cardService.importCards(context),
-          ),
-          IconButton(
+          if(_isEditing)
+            IconButton(
             icon: Icon(_isEditing ? Icons.close : Icons.edit),
             onPressed: _toggleEditMode,
           ),
@@ -106,6 +102,50 @@ class _MyCardPageState extends State<MyCardPage> {
               icon: const Icon(Icons.delete),
               onPressed: _handleDelete,
             ),
+          if(!_isEditing)
+            PopupMenuButton<String>(
+            tooltip: 'More options',
+            // The onSelected callback is triggered when a menu item is tapped
+            onSelected: (String value) {
+              switch (value) {
+                case 'backup':
+                  _cardService.exportCards();
+                  break;
+                case 'restore':
+                  _cardService.importCards(context);
+                  break;
+                case 'delete':
+                  _handleDelete();
+                  break;
+              }
+            },
+            // The itemBuilder builds the menu items conditionally
+            itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+                const PopupMenuItem<String>(
+                  value: 'backup',
+                  child: ListTile(
+                    leading: Icon(Icons.file_upload),
+                    title: Text('Backup'),
+                  ),
+                ),
+                const PopupMenuItem<String>(
+                  value: 'restore',
+                  child: ListTile(
+                    leading: Icon(Icons.file_download),
+                    title: Text('Restore'),
+                  ),
+                ),
+                const PopupMenuItem<String>(
+                  value: 'delete',
+                  child: ListTile(
+                    leading: Icon(Icons.delete),
+                    title: Text('Delete'),
+                  ),
+                ),
+
+            ],
+          ),
+
         ],
       ),
       body: Center(
@@ -126,11 +166,10 @@ class _MyCardPageState extends State<MyCardPage> {
                   });
                 }
               },
-              onTap: () => _handleCardTap(displayableCard),
+              onTap: () => {_handleCardTap(displayableCard)},
               child: Column(
                 children: [
                   Stack(
-                    alignment: Alignment.bottomRight,
                     children: [
                       buildCardWidget(cardDataMap),
                       if (_isEditing)
@@ -139,14 +178,26 @@ class _MyCardPageState extends State<MyCardPage> {
                           child: Icon(
                             isSelected
                                 ? Icons.check_circle
-                                : Icons.circle_outlined,
-                            color: isSelected
-                                ? Theme.of(context).colorScheme.primary
-                                : Colors.grey.withAlpha(80),
+                                : null,
+                            color:
+                                isSelected
+                                    ? Theme.of(context).colorScheme.primary
+                                    : Colors.grey.withAlpha(80),
                             size: 30,
                             shadows: const [
-                              Shadow(color: Colors.black45, blurRadius: 4)
+                              Shadow(color: Colors.black45, blurRadius: 4),
                             ],
+                          ),
+                        ),
+                      if (_isEditing)
+                        Positioned.fill(
+                          child: Container(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(16.0),
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.primary.withOpacity(_selectedCards.contains(displayableCard)? 0.5: 0),
+                            ),
                           ),
                         ),
                     ],
@@ -158,10 +209,10 @@ class _MyCardPageState extends State<MyCardPage> {
           },
         ),
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: FloatingActionButton.extended(
         onPressed: () => CardDialogs.showAddCardDialog(context, _cardService),
-        tooltip: 'Add Card',
-        child: const Icon(Icons.add),
+        label: const Text('Add Card'),
+        icon: const Icon(Icons.add),
       ),
     );
   }

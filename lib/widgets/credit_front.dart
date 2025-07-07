@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter/services.dart'; // Import for Clipboard
+
 
 String formatCardNumber(String text) {
   // Remove any existing spaces or non-digit characters first
@@ -47,7 +50,7 @@ class CreditCardFront extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withAlpha(127),
+              color: Colors.black.withAlpha(87),
               spreadRadius: 2,
               blurRadius: 10,
               offset: const Offset(0, 5),
@@ -60,39 +63,56 @@ class CreditCardFront extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Spacer to push content down, you can add a chip or logo here
-            const Align(
+            frontImageProvider == null ? Align(
               alignment: Alignment.topLeft,
               child: SizedBox(
                 height: 40,
-                width: 60,
-                // // Placeholder for a chip
-                // child: DecoratedBox(
-                //   decoration: BoxDecoration(
-                //       color: Color(0xFFC0C0C0),
-                //       borderRadius: BorderRadius.all(Radius.circular(6))
-                //   ),
-                // ),
-              ),
-            ),
-            SizedBox(height: 15,),
-
-            Text(
-              formatCardNumber(cardNumber),
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 25,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 2,
-                fontFamily: 'Courier',
-                shadows: [
-                  Shadow(
-                    blurRadius: 2.0,
-                    color: Colors.black87,
-                    offset: Offset(1.0, 1.0),
+                child:  Text(
+                  cardHolder,
+                  style: GoogleFonts.meaCulpa(
+                    color: Colors.white54,
+                    fontSize: 30, // Looks better larger
+                    fontWeight: FontWeight.bold,
                   ),
-                ],
+                ),
               ),
+            ): const SizedBox(),
+            SizedBox(height: 70,),
+            Row(
+              children: [
+                TextButton(
+                  onPressed: () {
+                    Clipboard.setData(ClipboardData(text: cardNumber));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Card number copied to clipboard!'),
+                        backgroundColor: Colors.green,
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
+                  },
+                  child: Text(
+                  formatCardNumber(cardNumber),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 23,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 2,
+                    fontFamily: 'Courier',
+                    shadows: [
+                      Shadow(
+                        blurRadius: 2.0,
+                        color: Colors.black87,
+                        offset: Offset(1.0, 1.0),
+                      ),
+                    ],
+                  ),
+                ),
+                ),
+
+              ],
             ),
+
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -114,7 +134,7 @@ class CreditCardFront extends StatelessWidget {
           label,
           style: TextStyle(
             color: Colors.white.withAlpha(204),
-            fontSize: 10,
+            fontSize: 12,
             shadows: const [
               Shadow(
                 blurRadius: 1.0,
@@ -125,10 +145,11 @@ class CreditCardFront extends StatelessWidget {
           ),
         ),
         Text(
-          value,
+          value.toUpperCase(),
           style: const TextStyle(
+            fontFamily: 'Courier',
             color: Colors.white,
-            fontSize: 14,
+            fontSize: 18,
             fontWeight: FontWeight.bold,
             shadows: [
               Shadow(
