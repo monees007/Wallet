@@ -31,10 +31,10 @@ class _EditNotePageState extends State<EditNotePage> {
   List<String> _imagePaths = [];
 
   final List<Color?> _themeColors = [
-    null, // Default
-    Colors.red[200], Colors.pink[200], Colors.deepPurple[200],
-    Colors.indigo[200], Colors.blue[300], Colors.teal[200],
-    Colors.green[300], Colors.orange[300], Colors.brown[300], Colors.grey[500],
+    Colors.grey[900],
+    Colors.cyan[800], Colors.pink[200], Colors.deepPurple[800],
+    Colors.indigo[400], Colors.blue[400], Colors.teal[400],
+    Colors.green[900], Colors.orange[900], Colors.brown[700], Colors.blueGrey[600],
   ];
 
   bool get _isEditing => _currentNote != null;
@@ -173,9 +173,9 @@ class _EditNotePageState extends State<EditNotePage> {
         scrolledUnderElevation: 0,
         actions: [
           TextButton.icon(
-            icon: const Icon(Icons.add_photo_alternate_outlined, color: Colors.black,),
+            icon: const Icon(Icons.add_photo_alternate_outlined),
             onPressed: _pickAndAddImage,
-            label: const Text('Add Image',style: TextStyle(color: Colors.black),),
+            label: const Text('Add Image',),
           ),
           _buildSaveButton(),
           const SizedBox(width: 8),
@@ -201,7 +201,7 @@ class _EditNotePageState extends State<EditNotePage> {
                       padding: const EdgeInsets.only(bottom: 8.0),
                       child: Text(
                         DateFormat.yMMMd().add_jm().format(_currentNote!.createdAt),
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.black),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(),
                       ),
                     ),
                   _buildColorPicker(),

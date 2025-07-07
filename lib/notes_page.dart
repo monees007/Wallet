@@ -124,7 +124,7 @@ class _NotesPageState extends State<NotesPage> {
               if (themeColorStr != null && themeColorStr.isNotEmpty) {
                 try {
                   cardColor =
-                      Color(int.parse(themeColorStr)).withOpacity(0.6);
+                      Color(int.parse(themeColorStr));//.withOpacity(0.6);
                 } catch (e) {
                   // Fallback to default if parsing fails for any reason
                   cardColor = Theme.of(context).colorScheme.surfaceVariant;
