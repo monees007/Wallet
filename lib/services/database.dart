@@ -1,10 +1,12 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
-// ignore: depend_on_referenced_packages
+import 'package:local_auth/local_auth.dart';
 import 'package:sqlite3/open.dart';
 import 'package:sqlcipher_flutter_libs/sqlcipher_flutter_libs.dart';
 
@@ -151,21 +153,76 @@ class AppDatabase extends _$AppDatabase {
   Future<int> deleteVerificationCode(int id) => (delete(verificationCodes)..where((t) => t.id.equals(id))).go();
 }
 
-// --- 3. Setup the Encrypted Connection ---
 LazyDatabase openConnection() {
   return LazyDatabase(() async {
+    // --- AUTHENTICATION CHECK ---
+    final localAuth = LocalAuthentication();
+    final didAuthenticate = await localAuth.authenticate(
+      localizedReason: 'Please authenticate to open your secure wallet',
+      options: const AuthenticationOptions(
+        biometricOnly: false,
+        stickyAuth: true,
+      ),
+    );
+
+    if (!didAuthenticate) {
+      throw Exception('User authentication failed.');
+    }
+
+    // --- PROCEED WITH DB CONNECTION ONLY IF AUTH SUCCEEDED ---
     final dbFolder = await getApplicationDocumentsDirectory();
     final file = File(p.join(dbFolder.path, 'wallet.db'));
 
     open.overrideFor(OperatingSystem.android, openCipherOnAndroid);
 
-    // IMPORTANT: This password should be fetched from flutter_secure_storage
-    const password = 'your-very-secret-password';
+    const secureStorage = FlutterSecureStorage();
+    const storageKey = 'db_password';
+
+    // 1. FIX: Use the correct options for Android. 'authenticationRequired' is not a valid parameter.
+    const aOptions = AndroidOptions(encryptedSharedPreferences: true);
+
+    // 2. REMOVED: iOptions parameter is gone from the read call.
+    var password = await secureStorage.read(
+      key: storageKey,
+      aOptions: aOptions,
+    );
+
+    if (password == null) {
+      final newKeyBytes = List<int>.generate(32, (_) => Random.secure().nextInt(256));
+      password = base64UrlEncode(newKeyBytes);
+
+      // 3. REMOVED: iOptions parameter is gone from the write call.
+      await secureStorage.write(
+        key: storageKey,
+        value: password,
+        aOptions: aOptions,
+      );
+    }
 
     final connection = NativeDatabase(file, setup: (db) {
       db.execute("PRAGMA key = '$password';");
+      db.execute('PRAGMA cipher_page_size = 4096;');
     });
 
     return connection;
   });
 }
+
+// // --- 3. Setup the Encrypted Connection ---
+// LazyDatabase openConnection() {
+//   return LazyDatabase(() async {
+//     final dbFolder = await getApplicationDocumentsDirectory();
+//     final file = File(p.join(dbFolder.path, 'wallet.db'));
+//
+//     open.overrideFor(OperatingSystem.android, openCipherOnAndroid);
+//
+//     // IMPORTANT: This password should be fetched from flutter_secure_storage
+//     const password = 'your-very-secret-password';
+//
+//     final connection = NativeDatabase(file, setup: (db) {
+//       db.execute("PRAGMA key = '$password';");
+//     });
+//
+//     return connection;
+//   });
+// }

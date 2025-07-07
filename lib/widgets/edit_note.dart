@@ -163,7 +163,6 @@ class _EditNotePageState extends State<EditNotePage> {
 
   @override
   Widget build(BuildContext context) {
-    final defaultBg = Theme.of(context).scaffoldBackgroundColor;
     final bgColor = _selectedColor ;//?.withValues(alpha: 0.6) ?? defaultBg;
 
     return Scaffold(
