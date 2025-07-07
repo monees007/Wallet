@@ -1425,8 +1425,34 @@ class $NotesTable extends Notes with TableInfo<$NotesTable, Note> {
     requiredDuringInsert: false,
     defaultValue: currentDateAndTime,
   );
+  static const VerificationMeta _themeMeta = const VerificationMeta('theme');
   @override
-  List<GeneratedColumn> get $columns => [id, title, content, createdAt];
+  late final GeneratedColumn<String> theme = GeneratedColumn<String>(
+    'theme',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  late final GeneratedColumnWithTypeConverter<List<String>, String> images =
+      GeneratedColumn<String>(
+        'images',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        defaultValue: Constant('[]'),
+      ).withConverter<List<String>>($NotesTable.$converterimages);
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    title,
+    content,
+    createdAt,
+    theme,
+    images,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -1464,6 +1490,12 @@ class $NotesTable extends Notes with TableInfo<$NotesTable, Note> {
         createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
       );
     }
+    if (data.containsKey('theme')) {
+      context.handle(
+        _themeMeta,
+        theme.isAcceptableOrUnknown(data['theme']!, _themeMeta),
+      );
+    }
     return context;
   }
 
@@ -1493,6 +1525,16 @@ class $NotesTable extends Notes with TableInfo<$NotesTable, Note> {
             DriftSqlType.dateTime,
             data['${effectivePrefix}created_at'],
           )!,
+      theme: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}theme'],
+      ),
+      images: $NotesTable.$converterimages.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}images'],
+        )!,
+      ),
     );
   }
 
@@ -1500,6 +1542,9 @@ class $NotesTable extends Notes with TableInfo<$NotesTable, Note> {
   $NotesTable createAlias(String alias) {
     return $NotesTable(attachedDatabase, alias);
   }
+
+  static TypeConverter<List<String>, String> $converterimages =
+      const ImageListConverter();
 }
 
 class Note extends DataClass implements Insertable<Note> {
@@ -1507,11 +1552,15 @@ class Note extends DataClass implements Insertable<Note> {
   final String title;
   final String content;
   final DateTime createdAt;
+  final String? theme;
+  final List<String> images;
   const Note({
     required this.id,
     required this.title,
     required this.content,
     required this.createdAt,
+    this.theme,
+    required this.images,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1520,6 +1569,14 @@ class Note extends DataClass implements Insertable<Note> {
     map['title'] = Variable<String>(title);
     map['content'] = Variable<String>(content);
     map['created_at'] = Variable<DateTime>(createdAt);
+    if (!nullToAbsent || theme != null) {
+      map['theme'] = Variable<String>(theme);
+    }
+    {
+      map['images'] = Variable<String>(
+        $NotesTable.$converterimages.toSql(images),
+      );
+    }
     return map;
   }
 
@@ -1529,6 +1586,9 @@ class Note extends DataClass implements Insertable<Note> {
       title: Value(title),
       content: Value(content),
       createdAt: Value(createdAt),
+      theme:
+          theme == null && nullToAbsent ? const Value.absent() : Value(theme),
+      images: Value(images),
     );
   }
 
@@ -1542,6 +1602,8 @@ class Note extends DataClass implements Insertable<Note> {
       title: serializer.fromJson<String>(json['title']),
       content: serializer.fromJson<String>(json['content']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      theme: serializer.fromJson<String?>(json['theme']),
+      images: serializer.fromJson<List<String>>(json['images']),
     );
   }
   @override
@@ -1552,6 +1614,8 @@ class Note extends DataClass implements Insertable<Note> {
       'title': serializer.toJson<String>(title),
       'content': serializer.toJson<String>(content),
       'createdAt': serializer.toJson<DateTime>(createdAt),
+      'theme': serializer.toJson<String?>(theme),
+      'images': serializer.toJson<List<String>>(images),
     };
   }
 
@@ -1560,11 +1624,15 @@ class Note extends DataClass implements Insertable<Note> {
     String? title,
     String? content,
     DateTime? createdAt,
+    Value<String?> theme = const Value.absent(),
+    List<String>? images,
   }) => Note(
     id: id ?? this.id,
     title: title ?? this.title,
     content: content ?? this.content,
     createdAt: createdAt ?? this.createdAt,
+    theme: theme.present ? theme.value : this.theme,
+    images: images ?? this.images,
   );
   Note copyWithCompanion(NotesCompanion data) {
     return Note(
@@ -1572,6 +1640,8 @@ class Note extends DataClass implements Insertable<Note> {
       title: data.title.present ? data.title.value : this.title,
       content: data.content.present ? data.content.value : this.content,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      theme: data.theme.present ? data.theme.value : this.theme,
+      images: data.images.present ? data.images.value : this.images,
     );
   }
 
@@ -1581,13 +1651,15 @@ class Note extends DataClass implements Insertable<Note> {
           ..write('id: $id, ')
           ..write('title: $title, ')
           ..write('content: $content, ')
-          ..write('createdAt: $createdAt')
+          ..write('createdAt: $createdAt, ')
+          ..write('theme: $theme, ')
+          ..write('images: $images')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, title, content, createdAt);
+  int get hashCode => Object.hash(id, title, content, createdAt, theme, images);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1595,7 +1667,9 @@ class Note extends DataClass implements Insertable<Note> {
           other.id == this.id &&
           other.title == this.title &&
           other.content == this.content &&
-          other.createdAt == this.createdAt);
+          other.createdAt == this.createdAt &&
+          other.theme == this.theme &&
+          other.images == this.images);
 }
 
 class NotesCompanion extends UpdateCompanion<Note> {
@@ -1603,17 +1677,23 @@ class NotesCompanion extends UpdateCompanion<Note> {
   final Value<String> title;
   final Value<String> content;
   final Value<DateTime> createdAt;
+  final Value<String?> theme;
+  final Value<List<String>> images;
   const NotesCompanion({
     this.id = const Value.absent(),
     this.title = const Value.absent(),
     this.content = const Value.absent(),
     this.createdAt = const Value.absent(),
+    this.theme = const Value.absent(),
+    this.images = const Value.absent(),
   });
   NotesCompanion.insert({
     this.id = const Value.absent(),
     required String title,
     required String content,
     this.createdAt = const Value.absent(),
+    this.theme = const Value.absent(),
+    this.images = const Value.absent(),
   }) : title = Value(title),
        content = Value(content);
   static Insertable<Note> custom({
@@ -1621,12 +1701,16 @@ class NotesCompanion extends UpdateCompanion<Note> {
     Expression<String>? title,
     Expression<String>? content,
     Expression<DateTime>? createdAt,
+    Expression<String>? theme,
+    Expression<String>? images,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (title != null) 'title': title,
       if (content != null) 'content': content,
       if (createdAt != null) 'created_at': createdAt,
+      if (theme != null) 'theme': theme,
+      if (images != null) 'images': images,
     });
   }
 
@@ -1635,12 +1719,16 @@ class NotesCompanion extends UpdateCompanion<Note> {
     Value<String>? title,
     Value<String>? content,
     Value<DateTime>? createdAt,
+    Value<String?>? theme,
+    Value<List<String>>? images,
   }) {
     return NotesCompanion(
       id: id ?? this.id,
       title: title ?? this.title,
       content: content ?? this.content,
       createdAt: createdAt ?? this.createdAt,
+      theme: theme ?? this.theme,
+      images: images ?? this.images,
     );
   }
 
@@ -1659,6 +1747,14 @@ class NotesCompanion extends UpdateCompanion<Note> {
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
+    if (theme.present) {
+      map['theme'] = Variable<String>(theme.value);
+    }
+    if (images.present) {
+      map['images'] = Variable<String>(
+        $NotesTable.$converterimages.toSql(images.value),
+      );
+    }
     return map;
   }
 
@@ -1668,7 +1764,9 @@ class NotesCompanion extends UpdateCompanion<Note> {
           ..write('id: $id, ')
           ..write('title: $title, ')
           ..write('content: $content, ')
-          ..write('createdAt: $createdAt')
+          ..write('createdAt: $createdAt, ')
+          ..write('theme: $theme, ')
+          ..write('images: $images')
           ..write(')'))
         .toString();
   }
@@ -2725,6 +2823,8 @@ typedef $$NotesTableCreateCompanionBuilder =
       required String title,
       required String content,
       Value<DateTime> createdAt,
+      Value<String?> theme,
+      Value<List<String>> images,
     });
 typedef $$NotesTableUpdateCompanionBuilder =
     NotesCompanion Function({
@@ -2732,6 +2832,8 @@ typedef $$NotesTableUpdateCompanionBuilder =
       Value<String> title,
       Value<String> content,
       Value<DateTime> createdAt,
+      Value<String?> theme,
+      Value<List<String>> images,
     });
 
 class $$NotesTableFilterComposer extends Composer<_$AppDatabase, $NotesTable> {
@@ -2760,6 +2862,17 @@ class $$NotesTableFilterComposer extends Composer<_$AppDatabase, $NotesTable> {
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get theme => $composableBuilder(
+    column: $table.theme,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnWithTypeConverterFilters<List<String>, List<String>, String>
+  get images => $composableBuilder(
+    column: $table.images,
+    builder: (column) => ColumnWithTypeConverterFilters(column),
   );
 }
 
@@ -2791,6 +2904,16 @@ class $$NotesTableOrderingComposer
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get theme => $composableBuilder(
+    column: $table.theme,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get images => $composableBuilder(
+    column: $table.images,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$NotesTableAnnotationComposer
@@ -2813,6 +2936,12 @@ class $$NotesTableAnnotationComposer
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<String> get theme =>
+      $composableBuilder(column: $table.theme, builder: (column) => column);
+
+  GeneratedColumnWithTypeConverter<List<String>, String> get images =>
+      $composableBuilder(column: $table.images, builder: (column) => column);
 }
 
 class $$NotesTableTableManager
@@ -2847,11 +2976,15 @@ class $$NotesTableTableManager
                 Value<String> title = const Value.absent(),
                 Value<String> content = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
+                Value<String?> theme = const Value.absent(),
+                Value<List<String>> images = const Value.absent(),
               }) => NotesCompanion(
                 id: id,
                 title: title,
                 content: content,
                 createdAt: createdAt,
+                theme: theme,
+                images: images,
               ),
           createCompanionCallback:
               ({
@@ -2859,11 +2992,15 @@ class $$NotesTableTableManager
                 required String title,
                 required String content,
                 Value<DateTime> createdAt = const Value.absent(),
+                Value<String?> theme = const Value.absent(),
+                Value<List<String>> images = const Value.absent(),
               }) => NotesCompanion.insert(
                 id: id,
                 title: title,
                 content: content,
                 createdAt: createdAt,
+                theme: theme,
+                images: images,
               ),
           withReferenceMapper:
               (p0) =>

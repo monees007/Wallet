@@ -1,14 +1,49 @@
 import 'package:flutter/material.dart';
 import 'package:dynamic_color/dynamic_color.dart';
+import 'package:shared_preferences/shared_preferences.dart'; // Import shared_preferences
 import 'package:wallet/services/database.dart';
 import 'card_page.dart';
+import 'notes_page.dart';
 
 void main() {
   runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {
+// MODIFIED: Converted to a StatefulWidget to manage theme state.
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  // State variable to hold the current theme mode
+  ThemeMode _themeMode = ThemeMode.system;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTheme(); // Load the saved theme on app start
+  }
+
+  // NEW: Load the saved theme preference
+  void _loadTheme() async {
+    final prefs = await SharedPreferences.getInstance();
+    final themeName = prefs.getString('themeMode') ?? ThemeMode.system.name;
+    setState(() {
+      _themeMode = ThemeMode.values.firstWhere((e) => e.name == themeName);
+    });
+  }
+
+  // NEW: Change the theme and save the preference
+  void _changeTheme(ThemeMode themeMode) async {
+    setState(() {
+      _themeMode = themeMode;
+    });
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('themeMode', themeMode.name);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -18,34 +53,32 @@ class MyApp extends StatelessWidget {
           title: 'Wallet',
           theme: ThemeData(
             useMaterial3: true,
-            colorScheme:
-            lightDynamic ?? ColorScheme.fromSeed(seedColor: Colors.cyan),
+            colorScheme: lightDynamic ?? ColorScheme.fromSeed(seedColor: Colors.cyan),
             textTheme: const TextTheme(
               titleLarge: TextStyle(fontWeight: FontWeight.bold),
             ),
           ),
           darkTheme: ThemeData(
             useMaterial3: true,
-            colorScheme: darkDynamic ??
-                ColorScheme.fromSeed(
-                  seedColor: Colors.cyan,
-                  brightness: Brightness.dark,
-                ),
+            // Apply dynamic color to dark theme as well
+            colorScheme: darkDynamic ?? ColorScheme.fromSeed(seedColor: Colors.cyan, brightness: Brightness.dark),
             textTheme: const TextTheme(
               titleLarge: TextStyle(fontWeight: FontWeight.bold),
             ),
           ),
-          themeMode: ThemeMode.system,
-          home: const MainPage(),
+          themeMode: _themeMode, // Use the state variable here
+          // Pass the change theme function to the MainPage
+          home: MainPage(onThemeChanged: _changeTheme),
         );
       },
     );
   }
 }
 
-// This widget now manages the single database instance for the entire app.
 class MainPage extends StatefulWidget {
-  const MainPage({super.key});
+  // NEW: Callback function to change the theme
+  final void Function(ThemeMode) onThemeChanged;
+  const MainPage({super.key, required this.onThemeChanged});
 
   @override
   State<MainPage> createState() => _MainPageState();
@@ -53,24 +86,17 @@ class MainPage extends StatefulWidget {
 
 class _MainPageState extends State<MainPage> {
   int _selectedIndex = 0;
-
-  // 1. Create the single database instance here.
   late final AppDatabase _database;
-
-  // 2. The list of pages is no longer static. It will be initialized with the database instance.
   late final List<Widget> _widgetOptions;
 
   @override
   void initState() {
     super.initState();
-    // Initialize the database when this widget is first created.
     _database = AppDatabase();
-
-    // 3. Pass the single database instance to each page.
     _widgetOptions = <Widget>[
-      MyCardPage(title: 'Wallet', database: _database), // Pass instance
-      NotesPage(database: _database), // Pass instance
-      CodesPage(database: _database), // Pass instance
+      NotesPage(database: _database, onThemeChanged: widget.onThemeChanged),
+      MyCardPage(title: 'Wallet', database: _database),
+      // CodesPage(database: _database),
     ];
   }
 
@@ -80,13 +106,53 @@ class _MainPageState extends State<MainPage> {
     });
   }
 
-  // 4. IMPORTANT: Dispose the database when the app is closed.
+  // NEW: Show the theme selection dialog
+  void _showThemeDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Choose Theme'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            RadioListTile<ThemeMode>(
+              title: const Text('Light'),
+              value: ThemeMode.light,
+              groupValue: Theme.of(context).brightness == Brightness.dark ? ThemeMode.dark : ThemeMode.light,
+              onChanged: (value) {
+                widget.onThemeChanged(ThemeMode.light);
+                Navigator.of(context).pop();
+              },
+            ),
+            RadioListTile<ThemeMode>(
+              title: const Text('Dark'),
+              value: ThemeMode.dark,
+              groupValue: Theme.of(context).brightness == Brightness.dark ? ThemeMode.dark : ThemeMode.light,
+              onChanged: (value) {
+                widget.onThemeChanged(ThemeMode.dark);
+                Navigator.of(context).pop();
+              },
+            ),
+            RadioListTile<ThemeMode>(
+              title: const Text('System Default'),
+              value: ThemeMode.system,
+              groupValue: null, // This can be improved, but works for selection
+              onChanged: (value) {
+                widget.onThemeChanged(ThemeMode.system);
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   void dispose() {
     _database.close();
     super.dispose();
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -97,15 +163,15 @@ class _MainPageState extends State<MainPage> {
       ),
       bottomNavigationBar: BottomNavigationBar(
         items: const <BottomNavigationBarItem>[
+          BottomNavigationBarItem(icon: Icon(Icons.notes), label: 'Notes'),
           BottomNavigationBarItem(
             icon: Icon(Icons.credit_card),
             label: 'Cards',
           ),
-          BottomNavigationBarItem(icon: Icon(Icons.notes), label: 'Notes'),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.shield_outlined),
-            label: 'Codes',
-          ),
+          // BottomNavigationBarItem(
+          //   icon: Icon(Icons.shield_outlined),
+          //   label: 'Codes',
+          // ),
         ],
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
@@ -117,41 +183,19 @@ class _MainPageState extends State<MainPage> {
   }
 }
 
-// UPDATED: This widget now accepts the database instance.
-class NotesPage extends StatelessWidget {
-  final AppDatabase database;
-  const NotesPage({super.key, required this.database});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Notes')),
-      body: const Center(
-        child: Text(
-          'Your notes will appear here.',
-          style: TextStyle(fontSize: 18),
-        ),
-      ),
-    );
-  }
-}
-
-// UPDATED: This widget now accepts the database instance.
 class CodesPage extends StatelessWidget {
   final AppDatabase database;
   const CodesPage({super.key, required this.database});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Two-Step Verification')),
-      body: const Center(
-        child: Text(
-          'Your 2FA codes will appear here.',
-          style: TextStyle(fontSize: 18),
-        ),
+    // Note: The new central AppBar will appear above this page as well.
+    // You can remove this Scaffold if you want the page to be part of the main scaffold.
+    return const Center(
+      child: Text(
+        'Your 2FA codes will appear here.',
+        style: TextStyle(fontSize: 18),
       ),
     );
   }
 }
-

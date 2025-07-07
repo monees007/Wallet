@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
@@ -8,6 +9,22 @@ import 'package:sqlite3/open.dart';
 import 'package:sqlcipher_flutter_libs/sqlcipher_flutter_libs.dart';
 
 part 'database.g.dart';
+
+// This converts a List<String> into a JSON string and back.
+class ImageListConverter extends TypeConverter<List<String>, String> {
+  const ImageListConverter();
+
+  @override
+  List<String> fromSql(String fromDb) {
+    if (fromDb.isEmpty) return [];
+    return (json.decode(fromDb) as List).cast<String>();
+  }
+
+  @override
+  String toSql(List<String> value) {
+    return json.encode(value);
+  }
+}
 
 
 /// Table for storing credit/debit cards.
@@ -53,6 +70,12 @@ class Notes extends Table {
   TextColumn get title => text().withLength(min: 1)();
   TextColumn get content => text()();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+
+  // --- NEW FIELDS ---
+  TextColumn get theme => text().nullable()();
+  TextColumn get images => text()
+      .map(const ImageListConverter())
+      .withDefault(Constant('[]'))(); // Defaults to an empty JSON array '[]'
 }
 
 /// Table for storing two-step verification codes (TOTP secrets).
@@ -76,7 +99,22 @@ class AppDatabase extends _$AppDatabase {
 
   // You should bump this number whenever you change or add a table definition.
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3; // Bumped from 2 to 3
+
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+    onCreate: (Migrator m) async {
+      await m.createAll();
+    },
+    onUpgrade: (Migrator m, int from, int to) async {
+      // Use a switch statement to handle specific version upgrades
+      if (from == 2) {
+        // This is the migration from v2 to v3
+        await m.addColumn(notes, notes.theme);
+        await m.addColumn(notes, notes.images);
+      }
+    },
+  );
 
   factory AppDatabase() => AppDatabase._(openConnection());
 
@@ -101,8 +139,10 @@ class AppDatabase extends _$AppDatabase {
   Future<int> deleteCustomCard(int id) => (delete(customCards)..where((t) => t.id.equals(id))).go();
 
   // Note methods
+  Stream<List<Note>> watchAllNotes() => (select(notes)..orderBy([(t) => OrderingTerm(expression: t.createdAt, mode: OrderingMode.desc)])).watch();
   Future<List<Note>> getAllNotes() => select(notes).get();
-  Future<int> addNote(NotesCompanion entry) => into(notes).insert(entry);
+  Future<Note> getNoteById(int nid) => (select(notes)..where((tbl) => tbl.id.equals(nid))).getSingle();  Future<int> addNote(NotesCompanion entry) => into(notes).insert(entry);
+  Future<bool> updateNote(NotesCompanion entry) => update(notes).replace(entry);
   Future<int> deleteNote(int id) => (delete(notes)..where((t) => t.id.equals(id))).go();
 
   // Verification code methods
