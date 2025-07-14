@@ -10,16 +10,17 @@ import 'package:local_auth/local_auth.dart';
 import 'package:sqlite3/open.dart';
 import 'package:sqlcipher_flutter_libs/sqlcipher_flutter_libs.dart';
 
+
 part 'database.g.dart';
 
-// This converts a List<String> into a JSON string and back.
 class ImageListConverter extends TypeConverter<List<String>, String> {
   const ImageListConverter();
 
   @override
   List<String> fromSql(String fromDb) {
     if (fromDb.isEmpty) return [];
-    return (json.decode(fromDb) as List).cast<String>();
+    final List<dynamic> decodedList = json.decode(fromDb) as List;
+    return decodedList.map((item) => item.toString()).toList();
   }
 
   @override
@@ -34,6 +35,7 @@ class ImageListConverter extends TypeConverter<List<String>, String> {
 class PaymentCards extends Table {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get cardholderName => text().withLength(min: 1, max: 50)();
+  TextColumn get cardName => text().nullable()();
   TextColumn get cardNumber => text().withLength(min: 16, max: 19)();
   TextColumn get expiryDate => text().withLength(min: 5, max: 5)(); // MM/YY
   TextColumn get cvv => text().withLength(min: 3, max: 4)();
@@ -87,21 +89,19 @@ class VerificationCodes extends Table {
   TextColumn get issuer => text().withLength(min: 1)(); // e.g., Google, GitHub
   TextColumn get accountName => text()(); // e.g., user@example.com
   TextColumn get secretKey => text()(); // This is the sensitive secret
+  TextColumn get logoUrl => text().nullable()(); // URL for the issuer's logo
 }
 
-// --- 2. Define the Database Class ---
-// CORRECTED: Added generateFromJson: true to enable JSON serialization
 @DriftDatabase(
   tables: [PaymentCards, LibraryCards, CustomCards, Notes, VerificationCodes],
   daos: [],
-  // This explicitly tells Drift to generate the fromJson factory constructors.
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase._(super.e);
 
   // You should bump this number whenever you change or add a table definition.
   @override
-  int get schemaVersion => 3; // Bumped from 2 to 3
+  int get schemaVersion => 4; // Bumped from 2 to 3 to 4
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -110,10 +110,15 @@ class AppDatabase extends _$AppDatabase {
     },
     onUpgrade: (Migrator m, int from, int to) async {
       // Use a switch statement to handle specific version upgrades
-      if (from == 2) {
-        // This is the migration from v2 to v3
-        await m.addColumn(notes, notes.theme);
-        await m.addColumn(notes, notes.images);
+      if (from < 4) {
+        // Migration from v2 to v3
+        if (from == 2) {
+          await m.addColumn(notes, notes.theme);
+          await m.addColumn(notes, notes.images);
+        }
+        // Migration from v3 to v4
+        await m.addColumn(verificationCodes, verificationCodes.logoUrl);
+        await m.addColumn(paymentCards, paymentCards.cardName);
       }
     },
   );
@@ -148,8 +153,10 @@ class AppDatabase extends _$AppDatabase {
   Future<int> deleteNote(int id) => (delete(notes)..where((t) => t.id.equals(id))).go();
 
   // Verification code methods
+  Stream<List<VerificationCode>> watchAllVerificationCodes() => select(verificationCodes).watch();
   Future<List<VerificationCode>> getAllVerificationCodes() => select(verificationCodes).get();
   Future<int> addVerificationCode(VerificationCodesCompanion entry) => into(verificationCodes).insert(entry);
+  Future<bool> updateVerificationCode(VerificationCodesCompanion entry) => update(verificationCodes).replace(entry);
   Future<int> deleteVerificationCode(int id) => (delete(verificationCodes)..where((t) => t.id.equals(id))).go();
 }
 
@@ -177,11 +184,7 @@ LazyDatabase openConnection() {
 
     const secureStorage = FlutterSecureStorage();
     const storageKey = 'db_password';
-
-    // 1. FIX: Use the correct options for Android. 'authenticationRequired' is not a valid parameter.
     const aOptions = AndroidOptions(encryptedSharedPreferences: true);
-
-    // 2. REMOVED: iOptions parameter is gone from the read call.
     var password = await secureStorage.read(
       key: storageKey,
       aOptions: aOptions,
@@ -191,7 +194,6 @@ LazyDatabase openConnection() {
       final newKeyBytes = List<int>.generate(32, (_) => Random.secure().nextInt(256));
       password = base64UrlEncode(newKeyBytes);
 
-      // 3. REMOVED: iOptions parameter is gone from the write call.
       await secureStorage.write(
         key: storageKey,
         value: password,
@@ -207,22 +209,3 @@ LazyDatabase openConnection() {
     return connection;
   });
 }
-
-// // --- 3. Setup the Encrypted Connection ---
-// LazyDatabase openConnection() {
-//   return LazyDatabase(() async {
-//     final dbFolder = await getApplicationDocumentsDirectory();
-//     final file = File(p.join(dbFolder.path, 'wallet.db'));
-//
-//     open.overrideFor(OperatingSystem.android, openCipherOnAndroid);
-//
-//     // IMPORTANT: This password should be fetched from flutter_secure_storage
-//     const password = 'your-very-secret-password';
-//
-//     final connection = NativeDatabase(file, setup: (db) {
-//       db.execute("PRAGMA key = '$password';");
-//     });
-//
-//     return connection;
-//   });
-// }

@@ -1,15 +1,9 @@
-import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
-import 'package:flutter/material.dart';
-import 'package:flutter_file_dialog/flutter_file_dialog.dart';
 import 'package:drift/drift.dart' show Value;
 
-// Import your updated Drift database definition
 import 'database.dart';
 
-/// A generic wrapper class to represent any type of card in the UI.
-/// This helps in managing different card types in a single list.
 class DisplayableCard {
   final int id;
   final String type; // e.g., 'payment', 'library', 'custom'
@@ -58,94 +52,12 @@ class CardService {
     }
   }
 
-  // --- Export/Import Operations ---
 
-  Future<void> exportCards() async {
-    try {
-      final payment = await _database.getAllPaymentCards();
-      final library = await _database.getAllLibraryCards();
-      final custom = await _database.getAllCustomCards();
 
-      if (payment.isEmpty && library.isEmpty && custom.isEmpty) {
-        _showSnackBar('No cards to export');
-        return;
-      }
-
-      // Helper to encode Uint8List to Base64
-      dynamic encodeImages(Map<String, dynamic> jsonMap) {
-        jsonMap.forEach((key, value) {
-          if (value is Uint8List) {
-            jsonMap[key] = base64Encode(value);
-          }
-        });
-        return jsonMap;
-      }
-
-      final backupData = {
-        'paymentCards': payment.map((c) => encodeImages(c.toJson())).toList(),
-        'libraryCards': library.map((c) => encodeImages(c.toJson())).toList(),
-        'customCards': custom.map((c) => encodeImages(c.toJson())).toList(),
-      };
-
-      final String backupJson = jsonEncode(backupData);
-      final params = SaveFileDialogParams(data: Uint8List.fromList(backupJson.codeUnits), fileName: 'wallet_full_backup.json');
-      await FlutterFileDialog.saveFile(params: params);
-      _showSnackBar('Cards exported successfully!');
-
-    } catch (e) {
-      _showSnackBar('Error exporting cards: $e');
-    }
-  }
-
-  Future<void> importCards(BuildContext context) async {
-    try {
-      final params = OpenFileDialogParams(dialogType: OpenFileDialogType.document, fileExtensionsFilter: const ['json']);
-      final filePath = await FlutterFileDialog.pickFile(params: params);
-
-      if (filePath == null) {
-        _showSnackBar('No file selected');
-        return;
-      }
-
-      final file = File(filePath);
-      final content = await file.readAsString();
-      final Map<String, dynamic> backupData = jsonDecode(content);
-
-      // Clear existing cards before importing.
-      await _database.delete(_database.paymentCards).go();
-      await _database.delete(_database.libraryCards).go();
-      await _database.delete(_database.customCards).go();
-
-      // Helper to decode Base64 to Uint8List
-      dynamic decodeImages(Map<String, dynamic> jsonMap) {
-        jsonMap.forEach((key, value) {
-          if (key.toLowerCase().contains('image') && value is String) {
-            jsonMap[key] = base64Decode(value);
-          }
-        });
-        return jsonMap;
-      }
-
-      for (var cardMap in (backupData['paymentCards'] as List)) {
-        await _database.addPaymentCardBulk(PaymentCard.fromJson(decodeImages(cardMap)));
-      }
-      for (var cardMap in (backupData['libraryCards'] as List)) {
-        await _database.addLibraryCardBulk(LibraryCard.fromJson(decodeImages(cardMap)));
-      }
-      for (var cardMap in (backupData['customCards'] as List)) {
-        await _database.addCustomCardBulk(CustomCard.fromJson(decodeImages(cardMap)));
-      }
-
-      await loadCards(); // Reload cards from DB to update the UI
-      _showSnackBar('Cards imported successfully');
-    } catch (e) {
-      _showSnackBar('Import failed: $e');
-    }
-  }
 
   // --- Card Addition Methods ---
 
-  Future<void> addPaymentCard(String cardNumber, String cardHolder, String expiryDate, String? cvv, String type, File? frontImageFile, File? backImageFile) async {
+  Future<void> addPaymentCard(String cardNumber, String cardHolder, String cardName, String expiryDate, String? cvv, String type, File? frontImageFile, File? backImageFile) async {
     try {
       final Uint8List? frontBytes = await frontImageFile?.readAsBytes();
       final Uint8List? backBytes = await backImageFile?.readAsBytes();
@@ -153,6 +65,7 @@ class CardService {
           cardholderName: cardHolder,
           cardNumber: cardNumber,
           expiryDate: expiryDate,
+          cardName: Value(cardName),
           cvv: cvv ?? '***',
           cardType: Value(type),
           frontImage: Value(frontBytes),

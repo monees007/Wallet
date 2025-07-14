@@ -3,9 +3,10 @@ import 'package:dynamic_color/dynamic_color.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:wallet/services/database.dart';
 import 'card_page.dart';
+import 'codes_page.dart';
 import 'notes_page.dart';
 
-// MODIFIED: main is now async to allow for initialization before running the app.
+
 void main() {
   // Required to ensure that async calls can be made before runApp()
   WidgetsFlutterBinding.ensureInitialized();
@@ -70,7 +71,7 @@ class _MyAppState extends State<MyApp> {
             ),
           ),
           themeMode: _themeMode,
-          // MODIFIED: Home is now MainPage, which handles its own state.
+
           home: MainPage(onThemeChanged: _changeTheme),
         );
       },
@@ -88,13 +89,13 @@ class MainPage extends StatefulWidget {
 
 class _MainPageState extends State<MainPage> {
   int _selectedIndex = 0;
-  // MODIFIED: This is now a Future that will be resolved.
+
   late final Future<AppDatabase> _dbFuture;
 
   @override
   void initState() {
     super.initState();
-    // MODIFIED: Start the async database initialization.
+
     _dbFuture = _initializeDatabase();
   }
 
@@ -102,6 +103,12 @@ class _MainPageState extends State<MainPage> {
   Future<AppDatabase> _initializeDatabase() async {
     return AppDatabase();
   }
+  static const List<String> _pageTitles = <String>[
+    'Notes',
+    'Wallet',
+    'Authenticator',
+  ];
+
 
   void _onItemTapped(int index) {
     setState(() {
@@ -153,7 +160,8 @@ class _MainPageState extends State<MainPage> {
 
   @override
   Widget build(BuildContext context) {
-    // MODIFIED: Use a FutureBuilder to handle the async database connection.
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
     return FutureBuilder<AppDatabase>(
       future: _dbFuture,
       builder: (context, snapshot) {
@@ -209,10 +217,32 @@ class _MainPageState extends State<MainPage> {
           final database = snapshot.data!;
           final widgetOptions = <Widget>[
             NotesPage(database: database, onThemeChanged: widget.onThemeChanged),
-            MyCardPage(title: 'Wallet', database: database),
+            MyCardPage(title: 'Wallet', database: database, onThemeChanged: widget.onThemeChanged),
+            TOTPScreen(database: database)
+
           ];
 
           return Scaffold(
+
+            appBar: _selectedIndex != 1 ? AppBar(
+              title: Text(_pageTitles[_selectedIndex]),
+              actions: [
+                // --- ADD THIS BUTTON ---
+                IconButton(
+                  icon: Icon(
+                    isDarkMode ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
+                  ),
+                  tooltip: 'Toggle Theme',
+                  onPressed: () {
+                    // Call the callback to change the theme globally
+                    final newTheme = isDarkMode ? ThemeMode.light : ThemeMode.dark;
+                    widget.onThemeChanged(newTheme);
+                  },
+                ),
+                // You can add other page-specific buttons here as well
+
+              ],
+            ): null,
             body: IndexedStack(
               index: _selectedIndex,
               children: widgetOptions,
@@ -220,8 +250,8 @@ class _MainPageState extends State<MainPage> {
             bottomNavigationBar: BottomNavigationBar(
               items: const <BottomNavigationBarItem>[
                 BottomNavigationBarItem(icon: Icon(Icons.notes), label: 'Notes'),
-                BottomNavigationBarItem(
-                    icon: Icon(Icons.credit_card), label: 'Cards'),
+                BottomNavigationBarItem(icon: Icon(Icons.credit_card), label: 'Cards'),
+                BottomNavigationBarItem(icon: Icon(Icons.lock), label: 'TOTP'),
               ],
               currentIndex: _selectedIndex,
               onTap: _onItemTapped,
@@ -239,18 +269,3 @@ class _MainPageState extends State<MainPage> {
   }
 }
 
-// NOTE: CodesPage is unchanged.
-class CodesPage extends StatelessWidget {
-  final AppDatabase database;
-  const CodesPage({super.key, required this.database});
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: Text(
-        'Your 2FA codes will appear here.',
-        style: TextStyle(fontSize: 18),
-      ),
-    );
-  }
-}

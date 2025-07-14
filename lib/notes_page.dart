@@ -61,27 +61,7 @@ class _NotesPageState extends State<NotesPage> {
 
   @override
   Widget build(BuildContext context) {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Notes'),
-        actions: [
-          // --- ADD THIS BUTTON ---
-          IconButton(
-            icon: Icon(
-              isDarkMode ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
-            ),
-            tooltip: 'Toggle Theme',
-            onPressed: () {
-              // Call the callback to change the theme globally
-              final newTheme = isDarkMode ? ThemeMode.light : ThemeMode.dark;
-              widget.onThemeChanged(newTheme);
-            },
-          ),
-          // You can add other page-specific buttons here as well
-        ],
-      ),
       body: StreamBuilder<List<Note>>(
         stream: widget.database.watchAllNotes(),
         builder: (context, snapshot) {
@@ -131,12 +111,10 @@ class _NotesPageState extends State<NotesPage> {
                 }
               }
 
-              // 3. Determine text color based on background brightness
               final brightness = ThemeData.estimateBrightnessForColor(cardColor);
               final textColor =
               brightness == Brightness.dark ? Colors.white70 : Colors.black87;
 
-              // --- THEME IMPLEMENTATION END ---
 
               return Card(
                 elevation: 0.0,

@@ -22,6 +22,7 @@ String formatCardNumber(String text) {
 class CreditCardFront extends StatelessWidget {
   final String cardNumber;
   final String cardHolder;
+  final String cardName;
   final String expiryDate;
   final ImageProvider<Object>? frontImageProvider;
 
@@ -31,6 +32,7 @@ class CreditCardFront extends StatelessWidget {
     required this.cardHolder,
     required this.expiryDate,
     required this.frontImageProvider,
+    required this.cardName,
   });
 
   @override
@@ -62,16 +64,15 @@ class CreditCardFront extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Spacer to push content down, you can add a chip or logo here
             frontImageProvider == null ? Align(
               alignment: Alignment.topLeft,
               child: SizedBox(
                 height: 40,
                 child:  Text(
-                  cardHolder,
-                  style: GoogleFonts.meaCulpa(
+                  cardName,
+                  style: GoogleFonts.kodeMono(
                     color: Colors.white54,
-                    fontSize: 30, // Looks better larger
+                    fontSize: 25,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
