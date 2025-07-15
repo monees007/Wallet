@@ -2,7 +2,7 @@
 
 
 #  Wallet 
-Secure Storage for ID & Credit Cards
+Secure Storage for ID & Credit Cards, and your notes
 
 ---
 
@@ -40,7 +40,7 @@ A modern Flutter-based mobile application that lets you securely store and manag
 * **QR Scanner to add TOTP accounts**
 
 
-[![Download apk](https://custom-icon-badges.demolab.com/badge/-Download-blue?style=for-the-badge&logo=download&logoColor=white "Download apk")](https://github.com/monees007/Wallet/releases/download/v1.0.0/wallet-v1.0.0.apk)
+[![Download apk](https://custom-icon-badges.demolab.com/badge/-Download-blue?style=for-the-badge&logo=download&logoColor=white "Download apk")](https://github.com/monees007/Wallet/releases/download/v2.0.0/wallet-v2.0.0.apk)
 
 ## Contribute
 
