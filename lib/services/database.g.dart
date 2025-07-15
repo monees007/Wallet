@@ -37,6 +37,17 @@ class $PaymentCardsTable extends PaymentCards
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _cardNameMeta = const VerificationMeta(
+    'cardName',
+  );
+  @override
+  late final GeneratedColumn<String> cardName = GeneratedColumn<String>(
+    'card_name',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _cardNumberMeta = const VerificationMeta(
     'cardNumber',
   );
@@ -117,6 +128,7 @@ class $PaymentCardsTable extends PaymentCards
   List<GeneratedColumn> get $columns => [
     id,
     cardholderName,
+    cardName,
     cardNumber,
     expiryDate,
     cvv,
@@ -149,6 +161,12 @@ class $PaymentCardsTable extends PaymentCards
       );
     } else if (isInserting) {
       context.missing(_cardholderNameMeta);
+    }
+    if (data.containsKey('card_name')) {
+      context.handle(
+        _cardNameMeta,
+        cardName.isAcceptableOrUnknown(data['card_name']!, _cardNameMeta),
+      );
     }
     if (data.containsKey('card_number')) {
       context.handle(
@@ -211,6 +229,10 @@ class $PaymentCardsTable extends PaymentCards
             DriftSqlType.string,
             data['${effectivePrefix}cardholder_name'],
           )!,
+      cardName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}card_name'],
+      ),
       cardNumber:
           attachedDatabase.typeMapping.read(
             DriftSqlType.string,
@@ -250,6 +272,7 @@ class $PaymentCardsTable extends PaymentCards
 class PaymentCard extends DataClass implements Insertable<PaymentCard> {
   final int id;
   final String cardholderName;
+  final String? cardName;
   final String cardNumber;
   final String expiryDate;
   final String cvv;
@@ -259,6 +282,7 @@ class PaymentCard extends DataClass implements Insertable<PaymentCard> {
   const PaymentCard({
     required this.id,
     required this.cardholderName,
+    this.cardName,
     required this.cardNumber,
     required this.expiryDate,
     required this.cvv,
@@ -271,6 +295,9 @@ class PaymentCard extends DataClass implements Insertable<PaymentCard> {
     final map = <String, Expression>{};
     map['id'] = Variable<int>(id);
     map['cardholder_name'] = Variable<String>(cardholderName);
+    if (!nullToAbsent || cardName != null) {
+      map['card_name'] = Variable<String>(cardName);
+    }
     map['card_number'] = Variable<String>(cardNumber);
     map['expiry_date'] = Variable<String>(expiryDate);
     map['cvv'] = Variable<String>(cvv);
@@ -290,6 +317,10 @@ class PaymentCard extends DataClass implements Insertable<PaymentCard> {
     return PaymentCardsCompanion(
       id: Value(id),
       cardholderName: Value(cardholderName),
+      cardName:
+          cardName == null && nullToAbsent
+              ? const Value.absent()
+              : Value(cardName),
       cardNumber: Value(cardNumber),
       expiryDate: Value(expiryDate),
       cvv: Value(cvv),
@@ -316,6 +347,7 @@ class PaymentCard extends DataClass implements Insertable<PaymentCard> {
     return PaymentCard(
       id: serializer.fromJson<int>(json['id']),
       cardholderName: serializer.fromJson<String>(json['cardholderName']),
+      cardName: serializer.fromJson<String?>(json['cardName']),
       cardNumber: serializer.fromJson<String>(json['cardNumber']),
       expiryDate: serializer.fromJson<String>(json['expiryDate']),
       cvv: serializer.fromJson<String>(json['cvv']),
@@ -330,6 +362,7 @@ class PaymentCard extends DataClass implements Insertable<PaymentCard> {
     return <String, dynamic>{
       'id': serializer.toJson<int>(id),
       'cardholderName': serializer.toJson<String>(cardholderName),
+      'cardName': serializer.toJson<String?>(cardName),
       'cardNumber': serializer.toJson<String>(cardNumber),
       'expiryDate': serializer.toJson<String>(expiryDate),
       'cvv': serializer.toJson<String>(cvv),
@@ -342,6 +375,7 @@ class PaymentCard extends DataClass implements Insertable<PaymentCard> {
   PaymentCard copyWith({
     int? id,
     String? cardholderName,
+    Value<String?> cardName = const Value.absent(),
     String? cardNumber,
     String? expiryDate,
     String? cvv,
@@ -351,6 +385,7 @@ class PaymentCard extends DataClass implements Insertable<PaymentCard> {
   }) => PaymentCard(
     id: id ?? this.id,
     cardholderName: cardholderName ?? this.cardholderName,
+    cardName: cardName.present ? cardName.value : this.cardName,
     cardNumber: cardNumber ?? this.cardNumber,
     expiryDate: expiryDate ?? this.expiryDate,
     cvv: cvv ?? this.cvv,
@@ -365,6 +400,7 @@ class PaymentCard extends DataClass implements Insertable<PaymentCard> {
           data.cardholderName.present
               ? data.cardholderName.value
               : this.cardholderName,
+      cardName: data.cardName.present ? data.cardName.value : this.cardName,
       cardNumber:
           data.cardNumber.present ? data.cardNumber.value : this.cardNumber,
       expiryDate:
@@ -382,6 +418,7 @@ class PaymentCard extends DataClass implements Insertable<PaymentCard> {
     return (StringBuffer('PaymentCard(')
           ..write('id: $id, ')
           ..write('cardholderName: $cardholderName, ')
+          ..write('cardName: $cardName, ')
           ..write('cardNumber: $cardNumber, ')
           ..write('expiryDate: $expiryDate, ')
           ..write('cvv: $cvv, ')
@@ -396,6 +433,7 @@ class PaymentCard extends DataClass implements Insertable<PaymentCard> {
   int get hashCode => Object.hash(
     id,
     cardholderName,
+    cardName,
     cardNumber,
     expiryDate,
     cvv,
@@ -409,6 +447,7 @@ class PaymentCard extends DataClass implements Insertable<PaymentCard> {
       (other is PaymentCard &&
           other.id == this.id &&
           other.cardholderName == this.cardholderName &&
+          other.cardName == this.cardName &&
           other.cardNumber == this.cardNumber &&
           other.expiryDate == this.expiryDate &&
           other.cvv == this.cvv &&
@@ -420,6 +459,7 @@ class PaymentCard extends DataClass implements Insertable<PaymentCard> {
 class PaymentCardsCompanion extends UpdateCompanion<PaymentCard> {
   final Value<int> id;
   final Value<String> cardholderName;
+  final Value<String?> cardName;
   final Value<String> cardNumber;
   final Value<String> expiryDate;
   final Value<String> cvv;
@@ -429,6 +469,7 @@ class PaymentCardsCompanion extends UpdateCompanion<PaymentCard> {
   const PaymentCardsCompanion({
     this.id = const Value.absent(),
     this.cardholderName = const Value.absent(),
+    this.cardName = const Value.absent(),
     this.cardNumber = const Value.absent(),
     this.expiryDate = const Value.absent(),
     this.cvv = const Value.absent(),
@@ -439,6 +480,7 @@ class PaymentCardsCompanion extends UpdateCompanion<PaymentCard> {
   PaymentCardsCompanion.insert({
     this.id = const Value.absent(),
     required String cardholderName,
+    this.cardName = const Value.absent(),
     required String cardNumber,
     required String expiryDate,
     required String cvv,
@@ -452,6 +494,7 @@ class PaymentCardsCompanion extends UpdateCompanion<PaymentCard> {
   static Insertable<PaymentCard> custom({
     Expression<int>? id,
     Expression<String>? cardholderName,
+    Expression<String>? cardName,
     Expression<String>? cardNumber,
     Expression<String>? expiryDate,
     Expression<String>? cvv,
@@ -462,6 +505,7 @@ class PaymentCardsCompanion extends UpdateCompanion<PaymentCard> {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (cardholderName != null) 'cardholder_name': cardholderName,
+      if (cardName != null) 'card_name': cardName,
       if (cardNumber != null) 'card_number': cardNumber,
       if (expiryDate != null) 'expiry_date': expiryDate,
       if (cvv != null) 'cvv': cvv,
@@ -474,6 +518,7 @@ class PaymentCardsCompanion extends UpdateCompanion<PaymentCard> {
   PaymentCardsCompanion copyWith({
     Value<int>? id,
     Value<String>? cardholderName,
+    Value<String?>? cardName,
     Value<String>? cardNumber,
     Value<String>? expiryDate,
     Value<String>? cvv,
@@ -484,6 +529,7 @@ class PaymentCardsCompanion extends UpdateCompanion<PaymentCard> {
     return PaymentCardsCompanion(
       id: id ?? this.id,
       cardholderName: cardholderName ?? this.cardholderName,
+      cardName: cardName ?? this.cardName,
       cardNumber: cardNumber ?? this.cardNumber,
       expiryDate: expiryDate ?? this.expiryDate,
       cvv: cvv ?? this.cvv,
@@ -501,6 +547,9 @@ class PaymentCardsCompanion extends UpdateCompanion<PaymentCard> {
     }
     if (cardholderName.present) {
       map['cardholder_name'] = Variable<String>(cardholderName.value);
+    }
+    if (cardName.present) {
+      map['card_name'] = Variable<String>(cardName.value);
     }
     if (cardNumber.present) {
       map['card_number'] = Variable<String>(cardNumber.value);
@@ -528,6 +577,7 @@ class PaymentCardsCompanion extends UpdateCompanion<PaymentCard> {
     return (StringBuffer('PaymentCardsCompanion(')
           ..write('id: $id, ')
           ..write('cardholderName: $cardholderName, ')
+          ..write('cardName: $cardName, ')
           ..write('cardNumber: $cardNumber, ')
           ..write('expiryDate: $expiryDate, ')
           ..write('cvv: $cvv, ')
@@ -1425,8 +1475,34 @@ class $NotesTable extends Notes with TableInfo<$NotesTable, Note> {
     requiredDuringInsert: false,
     defaultValue: currentDateAndTime,
   );
+  static const VerificationMeta _themeMeta = const VerificationMeta('theme');
   @override
-  List<GeneratedColumn> get $columns => [id, title, content, createdAt];
+  late final GeneratedColumn<String> theme = GeneratedColumn<String>(
+    'theme',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  late final GeneratedColumnWithTypeConverter<List<String>, String> images =
+      GeneratedColumn<String>(
+        'images',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        defaultValue: Constant('[]'),
+      ).withConverter<List<String>>($NotesTable.$converterimages);
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    title,
+    content,
+    createdAt,
+    theme,
+    images,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -1464,6 +1540,12 @@ class $NotesTable extends Notes with TableInfo<$NotesTable, Note> {
         createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
       );
     }
+    if (data.containsKey('theme')) {
+      context.handle(
+        _themeMeta,
+        theme.isAcceptableOrUnknown(data['theme']!, _themeMeta),
+      );
+    }
     return context;
   }
 
@@ -1493,6 +1575,16 @@ class $NotesTable extends Notes with TableInfo<$NotesTable, Note> {
             DriftSqlType.dateTime,
             data['${effectivePrefix}created_at'],
           )!,
+      theme: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}theme'],
+      ),
+      images: $NotesTable.$converterimages.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}images'],
+        )!,
+      ),
     );
   }
 
@@ -1500,6 +1592,9 @@ class $NotesTable extends Notes with TableInfo<$NotesTable, Note> {
   $NotesTable createAlias(String alias) {
     return $NotesTable(attachedDatabase, alias);
   }
+
+  static TypeConverter<List<String>, String> $converterimages =
+      const ImageListConverter();
 }
 
 class Note extends DataClass implements Insertable<Note> {
@@ -1507,11 +1602,15 @@ class Note extends DataClass implements Insertable<Note> {
   final String title;
   final String content;
   final DateTime createdAt;
+  final String? theme;
+  final List<String> images;
   const Note({
     required this.id,
     required this.title,
     required this.content,
     required this.createdAt,
+    this.theme,
+    required this.images,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1520,6 +1619,14 @@ class Note extends DataClass implements Insertable<Note> {
     map['title'] = Variable<String>(title);
     map['content'] = Variable<String>(content);
     map['created_at'] = Variable<DateTime>(createdAt);
+    if (!nullToAbsent || theme != null) {
+      map['theme'] = Variable<String>(theme);
+    }
+    {
+      map['images'] = Variable<String>(
+        $NotesTable.$converterimages.toSql(images),
+      );
+    }
     return map;
   }
 
@@ -1529,6 +1636,9 @@ class Note extends DataClass implements Insertable<Note> {
       title: Value(title),
       content: Value(content),
       createdAt: Value(createdAt),
+      theme:
+          theme == null && nullToAbsent ? const Value.absent() : Value(theme),
+      images: Value(images),
     );
   }
 
@@ -1542,6 +1652,8 @@ class Note extends DataClass implements Insertable<Note> {
       title: serializer.fromJson<String>(json['title']),
       content: serializer.fromJson<String>(json['content']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      theme: serializer.fromJson<String?>(json['theme']),
+      images: serializer.fromJson<List<String>>(json['images']),
     );
   }
   @override
@@ -1552,6 +1664,8 @@ class Note extends DataClass implements Insertable<Note> {
       'title': serializer.toJson<String>(title),
       'content': serializer.toJson<String>(content),
       'createdAt': serializer.toJson<DateTime>(createdAt),
+      'theme': serializer.toJson<String?>(theme),
+      'images': serializer.toJson<List<String>>(images),
     };
   }
 
@@ -1560,11 +1674,15 @@ class Note extends DataClass implements Insertable<Note> {
     String? title,
     String? content,
     DateTime? createdAt,
+    Value<String?> theme = const Value.absent(),
+    List<String>? images,
   }) => Note(
     id: id ?? this.id,
     title: title ?? this.title,
     content: content ?? this.content,
     createdAt: createdAt ?? this.createdAt,
+    theme: theme.present ? theme.value : this.theme,
+    images: images ?? this.images,
   );
   Note copyWithCompanion(NotesCompanion data) {
     return Note(
@@ -1572,6 +1690,8 @@ class Note extends DataClass implements Insertable<Note> {
       title: data.title.present ? data.title.value : this.title,
       content: data.content.present ? data.content.value : this.content,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      theme: data.theme.present ? data.theme.value : this.theme,
+      images: data.images.present ? data.images.value : this.images,
     );
   }
 
@@ -1581,13 +1701,15 @@ class Note extends DataClass implements Insertable<Note> {
           ..write('id: $id, ')
           ..write('title: $title, ')
           ..write('content: $content, ')
-          ..write('createdAt: $createdAt')
+          ..write('createdAt: $createdAt, ')
+          ..write('theme: $theme, ')
+          ..write('images: $images')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, title, content, createdAt);
+  int get hashCode => Object.hash(id, title, content, createdAt, theme, images);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1595,7 +1717,9 @@ class Note extends DataClass implements Insertable<Note> {
           other.id == this.id &&
           other.title == this.title &&
           other.content == this.content &&
-          other.createdAt == this.createdAt);
+          other.createdAt == this.createdAt &&
+          other.theme == this.theme &&
+          other.images == this.images);
 }
 
 class NotesCompanion extends UpdateCompanion<Note> {
@@ -1603,17 +1727,23 @@ class NotesCompanion extends UpdateCompanion<Note> {
   final Value<String> title;
   final Value<String> content;
   final Value<DateTime> createdAt;
+  final Value<String?> theme;
+  final Value<List<String>> images;
   const NotesCompanion({
     this.id = const Value.absent(),
     this.title = const Value.absent(),
     this.content = const Value.absent(),
     this.createdAt = const Value.absent(),
+    this.theme = const Value.absent(),
+    this.images = const Value.absent(),
   });
   NotesCompanion.insert({
     this.id = const Value.absent(),
     required String title,
     required String content,
     this.createdAt = const Value.absent(),
+    this.theme = const Value.absent(),
+    this.images = const Value.absent(),
   }) : title = Value(title),
        content = Value(content);
   static Insertable<Note> custom({
@@ -1621,12 +1751,16 @@ class NotesCompanion extends UpdateCompanion<Note> {
     Expression<String>? title,
     Expression<String>? content,
     Expression<DateTime>? createdAt,
+    Expression<String>? theme,
+    Expression<String>? images,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (title != null) 'title': title,
       if (content != null) 'content': content,
       if (createdAt != null) 'created_at': createdAt,
+      if (theme != null) 'theme': theme,
+      if (images != null) 'images': images,
     });
   }
 
@@ -1635,12 +1769,16 @@ class NotesCompanion extends UpdateCompanion<Note> {
     Value<String>? title,
     Value<String>? content,
     Value<DateTime>? createdAt,
+    Value<String?>? theme,
+    Value<List<String>>? images,
   }) {
     return NotesCompanion(
       id: id ?? this.id,
       title: title ?? this.title,
       content: content ?? this.content,
       createdAt: createdAt ?? this.createdAt,
+      theme: theme ?? this.theme,
+      images: images ?? this.images,
     );
   }
 
@@ -1659,6 +1797,14 @@ class NotesCompanion extends UpdateCompanion<Note> {
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
+    if (theme.present) {
+      map['theme'] = Variable<String>(theme.value);
+    }
+    if (images.present) {
+      map['images'] = Variable<String>(
+        $NotesTable.$converterimages.toSql(images.value),
+      );
+    }
     return map;
   }
 
@@ -1668,7 +1814,9 @@ class NotesCompanion extends UpdateCompanion<Note> {
           ..write('id: $id, ')
           ..write('title: $title, ')
           ..write('content: $content, ')
-          ..write('createdAt: $createdAt')
+          ..write('createdAt: $createdAt, ')
+          ..write('theme: $theme, ')
+          ..write('images: $images')
           ..write(')'))
         .toString();
   }
@@ -1725,8 +1873,25 @@ class $VerificationCodesTable extends VerificationCodes
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _logoUrlMeta = const VerificationMeta(
+    'logoUrl',
+  );
   @override
-  List<GeneratedColumn> get $columns => [id, issuer, accountName, secretKey];
+  late final GeneratedColumn<String> logoUrl = GeneratedColumn<String>(
+    'logo_url',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    issuer,
+    accountName,
+    secretKey,
+    logoUrl,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -1769,6 +1934,12 @@ class $VerificationCodesTable extends VerificationCodes
     } else if (isInserting) {
       context.missing(_secretKeyMeta);
     }
+    if (data.containsKey('logo_url')) {
+      context.handle(
+        _logoUrlMeta,
+        logoUrl.isAcceptableOrUnknown(data['logo_url']!, _logoUrlMeta),
+      );
+    }
     return context;
   }
 
@@ -1798,6 +1969,10 @@ class $VerificationCodesTable extends VerificationCodes
             DriftSqlType.string,
             data['${effectivePrefix}secret_key'],
           )!,
+      logoUrl: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}logo_url'],
+      ),
     );
   }
 
@@ -1813,11 +1988,13 @@ class VerificationCode extends DataClass
   final String issuer;
   final String accountName;
   final String secretKey;
+  final String? logoUrl;
   const VerificationCode({
     required this.id,
     required this.issuer,
     required this.accountName,
     required this.secretKey,
+    this.logoUrl,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1826,6 +2003,9 @@ class VerificationCode extends DataClass
     map['issuer'] = Variable<String>(issuer);
     map['account_name'] = Variable<String>(accountName);
     map['secret_key'] = Variable<String>(secretKey);
+    if (!nullToAbsent || logoUrl != null) {
+      map['logo_url'] = Variable<String>(logoUrl);
+    }
     return map;
   }
 
@@ -1835,6 +2015,10 @@ class VerificationCode extends DataClass
       issuer: Value(issuer),
       accountName: Value(accountName),
       secretKey: Value(secretKey),
+      logoUrl:
+          logoUrl == null && nullToAbsent
+              ? const Value.absent()
+              : Value(logoUrl),
     );
   }
 
@@ -1848,6 +2032,7 @@ class VerificationCode extends DataClass
       issuer: serializer.fromJson<String>(json['issuer']),
       accountName: serializer.fromJson<String>(json['accountName']),
       secretKey: serializer.fromJson<String>(json['secretKey']),
+      logoUrl: serializer.fromJson<String?>(json['logoUrl']),
     );
   }
   @override
@@ -1858,6 +2043,7 @@ class VerificationCode extends DataClass
       'issuer': serializer.toJson<String>(issuer),
       'accountName': serializer.toJson<String>(accountName),
       'secretKey': serializer.toJson<String>(secretKey),
+      'logoUrl': serializer.toJson<String?>(logoUrl),
     };
   }
 
@@ -1866,11 +2052,13 @@ class VerificationCode extends DataClass
     String? issuer,
     String? accountName,
     String? secretKey,
+    Value<String?> logoUrl = const Value.absent(),
   }) => VerificationCode(
     id: id ?? this.id,
     issuer: issuer ?? this.issuer,
     accountName: accountName ?? this.accountName,
     secretKey: secretKey ?? this.secretKey,
+    logoUrl: logoUrl.present ? logoUrl.value : this.logoUrl,
   );
   VerificationCode copyWithCompanion(VerificationCodesCompanion data) {
     return VerificationCode(
@@ -1879,6 +2067,7 @@ class VerificationCode extends DataClass
       accountName:
           data.accountName.present ? data.accountName.value : this.accountName,
       secretKey: data.secretKey.present ? data.secretKey.value : this.secretKey,
+      logoUrl: data.logoUrl.present ? data.logoUrl.value : this.logoUrl,
     );
   }
 
@@ -1888,13 +2077,14 @@ class VerificationCode extends DataClass
           ..write('id: $id, ')
           ..write('issuer: $issuer, ')
           ..write('accountName: $accountName, ')
-          ..write('secretKey: $secretKey')
+          ..write('secretKey: $secretKey, ')
+          ..write('logoUrl: $logoUrl')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, issuer, accountName, secretKey);
+  int get hashCode => Object.hash(id, issuer, accountName, secretKey, logoUrl);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1902,7 +2092,8 @@ class VerificationCode extends DataClass
           other.id == this.id &&
           other.issuer == this.issuer &&
           other.accountName == this.accountName &&
-          other.secretKey == this.secretKey);
+          other.secretKey == this.secretKey &&
+          other.logoUrl == this.logoUrl);
 }
 
 class VerificationCodesCompanion extends UpdateCompanion<VerificationCode> {
@@ -1910,17 +2101,20 @@ class VerificationCodesCompanion extends UpdateCompanion<VerificationCode> {
   final Value<String> issuer;
   final Value<String> accountName;
   final Value<String> secretKey;
+  final Value<String?> logoUrl;
   const VerificationCodesCompanion({
     this.id = const Value.absent(),
     this.issuer = const Value.absent(),
     this.accountName = const Value.absent(),
     this.secretKey = const Value.absent(),
+    this.logoUrl = const Value.absent(),
   });
   VerificationCodesCompanion.insert({
     this.id = const Value.absent(),
     required String issuer,
     required String accountName,
     required String secretKey,
+    this.logoUrl = const Value.absent(),
   }) : issuer = Value(issuer),
        accountName = Value(accountName),
        secretKey = Value(secretKey);
@@ -1929,12 +2123,14 @@ class VerificationCodesCompanion extends UpdateCompanion<VerificationCode> {
     Expression<String>? issuer,
     Expression<String>? accountName,
     Expression<String>? secretKey,
+    Expression<String>? logoUrl,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (issuer != null) 'issuer': issuer,
       if (accountName != null) 'account_name': accountName,
       if (secretKey != null) 'secret_key': secretKey,
+      if (logoUrl != null) 'logo_url': logoUrl,
     });
   }
 
@@ -1943,12 +2139,14 @@ class VerificationCodesCompanion extends UpdateCompanion<VerificationCode> {
     Value<String>? issuer,
     Value<String>? accountName,
     Value<String>? secretKey,
+    Value<String?>? logoUrl,
   }) {
     return VerificationCodesCompanion(
       id: id ?? this.id,
       issuer: issuer ?? this.issuer,
       accountName: accountName ?? this.accountName,
       secretKey: secretKey ?? this.secretKey,
+      logoUrl: logoUrl ?? this.logoUrl,
     );
   }
 
@@ -1967,6 +2165,9 @@ class VerificationCodesCompanion extends UpdateCompanion<VerificationCode> {
     if (secretKey.present) {
       map['secret_key'] = Variable<String>(secretKey.value);
     }
+    if (logoUrl.present) {
+      map['logo_url'] = Variable<String>(logoUrl.value);
+    }
     return map;
   }
 
@@ -1976,7 +2177,8 @@ class VerificationCodesCompanion extends UpdateCompanion<VerificationCode> {
           ..write('id: $id, ')
           ..write('issuer: $issuer, ')
           ..write('accountName: $accountName, ')
-          ..write('secretKey: $secretKey')
+          ..write('secretKey: $secretKey, ')
+          ..write('logoUrl: $logoUrl')
           ..write(')'))
         .toString();
   }
@@ -2008,6 +2210,7 @@ typedef $$PaymentCardsTableCreateCompanionBuilder =
     PaymentCardsCompanion Function({
       Value<int> id,
       required String cardholderName,
+      Value<String?> cardName,
       required String cardNumber,
       required String expiryDate,
       required String cvv,
@@ -2019,6 +2222,7 @@ typedef $$PaymentCardsTableUpdateCompanionBuilder =
     PaymentCardsCompanion Function({
       Value<int> id,
       Value<String> cardholderName,
+      Value<String?> cardName,
       Value<String> cardNumber,
       Value<String> expiryDate,
       Value<String> cvv,
@@ -2043,6 +2247,11 @@ class $$PaymentCardsTableFilterComposer
 
   ColumnFilters<String> get cardholderName => $composableBuilder(
     column: $table.cardholderName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get cardName => $composableBuilder(
+    column: $table.cardName,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -2096,6 +2305,11 @@ class $$PaymentCardsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get cardName => $composableBuilder(
+    column: $table.cardName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get cardNumber => $composableBuilder(
     column: $table.cardNumber,
     builder: (column) => ColumnOrderings(column),
@@ -2143,6 +2357,9 @@ class $$PaymentCardsTableAnnotationComposer
     column: $table.cardholderName,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get cardName =>
+      $composableBuilder(column: $table.cardName, builder: (column) => column);
 
   GeneratedColumn<String> get cardNumber => $composableBuilder(
     column: $table.cardNumber,
@@ -2203,6 +2420,7 @@ class $$PaymentCardsTableTableManager
               ({
                 Value<int> id = const Value.absent(),
                 Value<String> cardholderName = const Value.absent(),
+                Value<String?> cardName = const Value.absent(),
                 Value<String> cardNumber = const Value.absent(),
                 Value<String> expiryDate = const Value.absent(),
                 Value<String> cvv = const Value.absent(),
@@ -2212,6 +2430,7 @@ class $$PaymentCardsTableTableManager
               }) => PaymentCardsCompanion(
                 id: id,
                 cardholderName: cardholderName,
+                cardName: cardName,
                 cardNumber: cardNumber,
                 expiryDate: expiryDate,
                 cvv: cvv,
@@ -2223,6 +2442,7 @@ class $$PaymentCardsTableTableManager
               ({
                 Value<int> id = const Value.absent(),
                 required String cardholderName,
+                Value<String?> cardName = const Value.absent(),
                 required String cardNumber,
                 required String expiryDate,
                 required String cvv,
@@ -2232,6 +2452,7 @@ class $$PaymentCardsTableTableManager
               }) => PaymentCardsCompanion.insert(
                 id: id,
                 cardholderName: cardholderName,
+                cardName: cardName,
                 cardNumber: cardNumber,
                 expiryDate: expiryDate,
                 cvv: cvv,
@@ -2725,6 +2946,8 @@ typedef $$NotesTableCreateCompanionBuilder =
       required String title,
       required String content,
       Value<DateTime> createdAt,
+      Value<String?> theme,
+      Value<List<String>> images,
     });
 typedef $$NotesTableUpdateCompanionBuilder =
     NotesCompanion Function({
@@ -2732,6 +2955,8 @@ typedef $$NotesTableUpdateCompanionBuilder =
       Value<String> title,
       Value<String> content,
       Value<DateTime> createdAt,
+      Value<String?> theme,
+      Value<List<String>> images,
     });
 
 class $$NotesTableFilterComposer extends Composer<_$AppDatabase, $NotesTable> {
@@ -2760,6 +2985,17 @@ class $$NotesTableFilterComposer extends Composer<_$AppDatabase, $NotesTable> {
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get theme => $composableBuilder(
+    column: $table.theme,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnWithTypeConverterFilters<List<String>, List<String>, String>
+  get images => $composableBuilder(
+    column: $table.images,
+    builder: (column) => ColumnWithTypeConverterFilters(column),
   );
 }
 
@@ -2791,6 +3027,16 @@ class $$NotesTableOrderingComposer
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get theme => $composableBuilder(
+    column: $table.theme,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get images => $composableBuilder(
+    column: $table.images,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$NotesTableAnnotationComposer
@@ -2813,6 +3059,12 @@ class $$NotesTableAnnotationComposer
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<String> get theme =>
+      $composableBuilder(column: $table.theme, builder: (column) => column);
+
+  GeneratedColumnWithTypeConverter<List<String>, String> get images =>
+      $composableBuilder(column: $table.images, builder: (column) => column);
 }
 
 class $$NotesTableTableManager
@@ -2847,11 +3099,15 @@ class $$NotesTableTableManager
                 Value<String> title = const Value.absent(),
                 Value<String> content = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
+                Value<String?> theme = const Value.absent(),
+                Value<List<String>> images = const Value.absent(),
               }) => NotesCompanion(
                 id: id,
                 title: title,
                 content: content,
                 createdAt: createdAt,
+                theme: theme,
+                images: images,
               ),
           createCompanionCallback:
               ({
@@ -2859,11 +3115,15 @@ class $$NotesTableTableManager
                 required String title,
                 required String content,
                 Value<DateTime> createdAt = const Value.absent(),
+                Value<String?> theme = const Value.absent(),
+                Value<List<String>> images = const Value.absent(),
               }) => NotesCompanion.insert(
                 id: id,
                 title: title,
                 content: content,
                 createdAt: createdAt,
+                theme: theme,
+                images: images,
               ),
           withReferenceMapper:
               (p0) =>
@@ -2900,6 +3160,7 @@ typedef $$VerificationCodesTableCreateCompanionBuilder =
       required String issuer,
       required String accountName,
       required String secretKey,
+      Value<String?> logoUrl,
     });
 typedef $$VerificationCodesTableUpdateCompanionBuilder =
     VerificationCodesCompanion Function({
@@ -2907,6 +3168,7 @@ typedef $$VerificationCodesTableUpdateCompanionBuilder =
       Value<String> issuer,
       Value<String> accountName,
       Value<String> secretKey,
+      Value<String?> logoUrl,
     });
 
 class $$VerificationCodesTableFilterComposer
@@ -2935,6 +3197,11 @@ class $$VerificationCodesTableFilterComposer
 
   ColumnFilters<String> get secretKey => $composableBuilder(
     column: $table.secretKey,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get logoUrl => $composableBuilder(
+    column: $table.logoUrl,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -2967,6 +3234,11 @@ class $$VerificationCodesTableOrderingComposer
     column: $table.secretKey,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get logoUrl => $composableBuilder(
+    column: $table.logoUrl,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$VerificationCodesTableAnnotationComposer
@@ -2991,6 +3263,9 @@ class $$VerificationCodesTableAnnotationComposer
 
   GeneratedColumn<String> get secretKey =>
       $composableBuilder(column: $table.secretKey, builder: (column) => column);
+
+  GeneratedColumn<String> get logoUrl =>
+      $composableBuilder(column: $table.logoUrl, builder: (column) => column);
 }
 
 class $$VerificationCodesTableTableManager
@@ -3043,11 +3318,13 @@ class $$VerificationCodesTableTableManager
                 Value<String> issuer = const Value.absent(),
                 Value<String> accountName = const Value.absent(),
                 Value<String> secretKey = const Value.absent(),
+                Value<String?> logoUrl = const Value.absent(),
               }) => VerificationCodesCompanion(
                 id: id,
                 issuer: issuer,
                 accountName: accountName,
                 secretKey: secretKey,
+                logoUrl: logoUrl,
               ),
           createCompanionCallback:
               ({
@@ -3055,11 +3332,13 @@ class $$VerificationCodesTableTableManager
                 required String issuer,
                 required String accountName,
                 required String secretKey,
+                Value<String?> logoUrl = const Value.absent(),
               }) => VerificationCodesCompanion.insert(
                 id: id,
                 issuer: issuer,
                 accountName: accountName,
                 secretKey: secretKey,
+                logoUrl: logoUrl,
               ),
           withReferenceMapper:
               (p0) =>

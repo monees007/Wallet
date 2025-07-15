@@ -19,6 +19,7 @@ Widget buildCardWidget(Map<String, dynamic> cardData) {
       return FlipCardWidget(
         cardNumber: cardData['cardNumber'] ?? '**** **** **** ****',
         cardHolder: cardData['cardholderName'] ?? 'CARD HOLDER',
+        cardName: cardData['cardName'] ?? 'CREDIT CARD',
         expiryDate: cardData['expiryDate'] ?? 'MM/YY',
         cvv: cardData['cvv'] ?? '***',
         frontImageProvider: const AssetImage("assets/swiggy.png"),
@@ -29,6 +30,7 @@ Widget buildCardWidget(Map<String, dynamic> cardData) {
     if (cardType == 'SBI SimplyClick') {
       return FlipCardWidget(
         cardNumber: cardData['cardNumber'] ?? '**** **** **** ****',
+        cardName: cardData['cardName']?? 'CREDIT CARD',
         cardHolder: cardData['cardholderName'] ?? 'CARD HOLDER',
         expiryDate: cardData['expiryDate'] ?? 'MM/YY',
         cvv: cardData['cvv'] ?? '***',
@@ -51,6 +53,7 @@ Widget buildCardWidget(Map<String, dynamic> cardData) {
     return FlipCardWidget(
       cardNumber: cardData['cardNumber'] ?? '**** **** **** ****',
       cardHolder: cardData['cardholderName'] ?? 'CARD HOLDER',
+      cardName: cardData['cardName'] ?? 'CREDIT CARD',
       expiryDate: cardData['expiryDate'] ?? 'MM/YY',
       cvv: cardData['cvv'] ?? '***',
       frontImageProvider: frontProvider, // Pass the MemoryImage or null
@@ -98,8 +101,8 @@ Widget buildCardWidget(Map<String, dynamic> cardData) {
   // Fallback for any unknown card data structure
   return Container(
     padding: const EdgeInsets.all(16.0),
-    child: Text(cardData.toString()),
-    // child: Text('Unknown card Type'),
+    child: Text('Unknown card Type'),
+    // child: Text(cardData.toString()),
 
   );
 }

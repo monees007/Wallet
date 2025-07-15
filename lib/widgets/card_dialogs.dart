@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'dart:io'; // For File
+import 'dart:io';
 
 import 'package:wallet/services/card_service.dart';
 
-// This file contains functions to show different card addition dialogs
 class CardDialogs {
-  // Main dialog to choose card type
   static void showAddCardDialog(BuildContext context, CardService cardService) {
     showDialog(
       context: context,
@@ -61,6 +59,7 @@ class CardDialogs {
     final formKey = GlobalKey<FormState>();
     String cardNumber = '';
     String cardHolder = '';
+    String cardName = '';
     String expiryDate = '';
     String cvv = '';
     File? frontImage;
@@ -151,7 +150,6 @@ class CardDialogs {
                           AutofillHints.creditCardSecurityCode,
                         ],
                         validator: (value) {
-                          // If a value is entered, validate its length. Otherwise, it's valid.
                           if (value != null &&
                               value.isNotEmpty &&
                               value.length < 3) {
@@ -188,7 +186,20 @@ class CardDialogs {
                         onSaved: (value) => selectedType = value,
                       ),
                       const SizedBox(height: 10),
-                      // CORRECTED: The condition now matches the dropdown item exactly.
+                      if (selectedType == 'Other Credit/Debit Card')
+                        TextFormField(
+                          keyboardType: TextInputType.name,
+                          decoration: const InputDecoration(
+                            labelText: 'Card Name',
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Card Name is required';
+                            }
+                            return null;
+                          },
+                          onSaved: (value) => cardName = value ?? '',
+                        ),
                       if (selectedType == 'Other Credit/Debit Card')
                         Row(
                           children: [
@@ -248,10 +259,10 @@ class CardDialogs {
                   onPressed: () {
                     if (formKey.currentState?.validate() ?? false) {
                       formKey.currentState?.save();
-                      // The service method name was updated for clarity.
                       cardService.addPaymentCard(
                         cardNumber,
                         cardHolder,
+                        cardName,
                         expiryDate,
                         cvv,
                         selectedType!,
@@ -315,7 +326,6 @@ class CardDialogs {
                                 value?.isEmpty ?? true ? 'Required' : null,
                         onSaved: (value) => idNumber = value ?? '',
                       ),
-                      // CORRECTED: These fields are now optional, validator removed.
                       TextFormField(
                         decoration: const InputDecoration(
                           labelText: 'Registration Number (Optional)',
@@ -372,7 +382,6 @@ class CardDialogs {
                   onPressed: () {
                     if (formKey.currentState?.validate() ?? false) {
                       formKey.currentState?.save();
-                      // CORRECTED: Removed the extra 'id' parameter.
                       cardService.addLibraryCard(
                         name,
                         idNumber,

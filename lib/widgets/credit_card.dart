@@ -5,6 +5,7 @@ import 'credit_back.dart';
 
 class FlipCardWidget extends StatefulWidget {
   final String cardNumber;
+  final String cardName;
   final String cardHolder;
   final String expiryDate;
   final String cvv;
@@ -20,7 +21,7 @@ class FlipCardWidget extends StatefulWidget {
     required this.cvv,
     // UPDATED: Now accepts ImageProvider
     this.frontImageProvider,
-    this.backImageProvider,
+    this.backImageProvider, required this.cardName,
   });
 
   @override
@@ -36,7 +37,7 @@ class _FlipCardWidgetState extends State<FlipCardWidget>
   void initState() {
     super.initState();
     _controller = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 500));
+        vsync: this, duration: const Duration(milliseconds: 400));
     // This animation flips the card from 0 to 180 degrees (pi radians)
     _animation = Tween<double>(begin: 0, end: pi).animate(_controller);
   }
@@ -79,6 +80,7 @@ class _FlipCardWidgetState extends State<FlipCardWidget>
               // UPDATED: Pass the ImageProvider down
               frontImageProvider: widget.frontImageProvider,
               cardNumber: widget.cardNumber,
+              cardName: widget.cardName,
               cardHolder: widget.cardHolder,
               expiryDate: widget.expiryDate,
             )

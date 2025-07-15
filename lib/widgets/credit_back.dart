@@ -40,7 +40,7 @@ class CreditCardBack extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(),
+              color: Colors.black.withAlpha(87),
               spreadRadius: 2,
               blurRadius: 10,
               offset: const Offset(0, 5),
