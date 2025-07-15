@@ -16,7 +16,6 @@ class BackupService {
   Future<void> makeCompleteBackup(String password) async {
     final backupData = await _fetchAllData();
     final serializedData = json.encode(backupData);
-    print(serializedData);
 
     // Run encryption in the background
     final encryptedData = await compute(
@@ -48,7 +47,6 @@ class BackupService {
         );
 
         final backupData = json.decode(decryptedData) as Map<String, dynamic>;
-        print(backupData);
         await _clearAllTables();
         await _restoreData(backupData);
       } catch (e) {
